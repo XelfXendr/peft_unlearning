@@ -19,7 +19,7 @@ pip-req:
 
 [unix]
 run *file_and_args:
-    cd {{invocation_directory()}}; {{justfile_directory()}}/venv/bin/python3 {{file_and_args}}
+	cd {{invocation_directory()}}; {{justfile_directory()}}/venv/bin/python3 {{file_and_args}}
 [windows]
 run *file_and_args:
-    cd {{invocation_directory()}}; {{justfile_directory()}}\venv\Scripts\python {{file_and_args}}
+	cd {{invocation_directory()}}; {{justfile_directory()}}\venv\Scripts\python {{file_and_args}}

@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./bitnet_b1_58-large"
+    ]
+}

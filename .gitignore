@@ -1,4 +1,7 @@
 venv/
 
-bitnet_b1_58-large/
 bitnet_b1_58-xl/
+bitnet_b1_58-large/
+
+jupyter/semeval25-unlearning-data/
+jupyter/semeval25-unlearning-model/

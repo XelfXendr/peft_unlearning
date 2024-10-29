@@ -5,3 +5,5 @@ numpy<2
 ipykernel
 ipywidgets
 sentencepiece
+protobuf
+accelerate

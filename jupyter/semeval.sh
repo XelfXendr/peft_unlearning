@@ -19,10 +19,10 @@ cd $SCRATCHDIR
 # set up python environment
 module add python/python-3.10.4-intel-19.0.4-sc7snnf
 python3 -m venv venv
-env/bin/pip install --no-cache-dir --upgrade pip setuptools
-env/bin/pip install --no-cache-dir -r requirements.txt
+venv/bin/pip install --no-cache-dir --upgrade pip setuptools
+venv/bin/pip install --no-cache-dir -r llm_thesis/requirements.txt
 
 # ... the computation ...
-cd jupyter
-../venv/bin/python download_model.py
-../venv/bin/python text_generation_test.py --logdir $LOGDIR
+cd llm_thesis/jupyter
+$SCRATCHDIR/venv/bin/python download_model.py
+$SCRATCHDIR/venv/bin/python text_generation_test.py --logdir $LOGDIR

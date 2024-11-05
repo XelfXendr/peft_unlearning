@@ -24,7 +24,7 @@ def main(args: argparse.Namespace):
 
     pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, max_new_tokens=50, device=0)
 
-    result = pipe(forget_train_df["input"][:10])
+    result = pipe(list(forget_train_df["input"][:100]))
 
     os.makedirs(args.logdir, exist_ok=True)
     with open(f"{args.logdir}/output.txt", "w") as f:

@@ -5,6 +5,7 @@ huggingface_hub
 pandas 
 pyarrow
 numpy<2
+jupyter
 ipykernel
 ipywidgets
 sentencepiece

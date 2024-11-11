@@ -23,3 +23,6 @@ run *file_and_args:
 [windows]
 run *file_and_args:
 	cd {{invocation_directory()}}; {{justfile_directory()}}\venv\Scripts\python {{file_and_args}}
+
+metacentrum-jupyter:
+	ssh -L 8308:127.0.0.1:8308 -t ***REMOVED*** "qsub ~/llm_thesis/jupyter.sh"

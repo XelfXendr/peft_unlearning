@@ -1,12 +1,15 @@
 import datetime
+from enum import Enum
 import re
 import pandas as pd
+import torch.utils
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import os
 import argparse
 from download_model import download_model, download_datasets, download_model_1B
 from transformers import pipeline
 import torch
+from torch.utils.data import DataLoader
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -31,8 +34,6 @@ class UnlearningModel(torch.nn.Module):
 
     def unlearn(self, retain_train: pd.DataFrame, retain_val: pd.DataFrame, forget_train: pd.DataFrame, forget_val: pd.DataFrame):
         self.train()
-
-    
 
 def main(args: argparse.Namespace):
     # set random seed
@@ -64,26 +65,40 @@ def unlearn(
     #pipe = pipeline('text2text-generation', model=model, tokenizer=tokenizer, max_new_tokens=50)
     #print(pipe("Today's breakfast is"))
 
-    def tokenize_function(example):
-        return tokenizer(example["input"], example["output"], return_tensors='pt')
+    def tokenize_function(example, forget: int):
+        # tokenize string
+        tokenized = tokenizer(example["input"], example["output"], return_tensors='pt', max_length=2048, truncation=True, )
+        # get the range of output
+        output_beginning = tokenized.char_to_token(0, sequence_index=1)
+        output_end = tokenized.char_to_token(len(example["output"])-1, sequence_index=1) + 1
+        # squeeze tensors
+        tokenized['input_ids'] = tokenized['input_ids'].squeeze()
+        tokenized['attention_mask'] = tokenized['attention_mask'].squeeze()
+        return tokenized, [output_beginning, output_end], forget
 
-    # tokenizer.pad to combine multiple tokenized strings
-
-    #tokenized_retain = retain_train.map(tokenize_function, batched=True) 
-    tokenized_retain = retain_train.apply(tokenize_function, axis=1)
-    print(tokenized_retain[0])
-    #print(model.parameters)
-
-    #print(retain_train.columns)
-    #print(f"'{retain_train['input'][0]}'")
-    #print(f"'{retain_train['output'][0]}'")
+    def prepare_batch(data):
+        inputs, ranges, tasks = zip(*data)
+        # combined tokenized inputs into a single tensor
+        inputs = tokenizer.pad(inputs, padding=True, return_tensors="pt")
+        # create tensors for ranges and tasks
+        ranges = torch.tensor(np.asarray(ranges), dtype=torch.long)
+        tasks = torch.tensor(np.asarray(tasks), dtype=torch.long)
+        return (inputs, ranges, tasks)
     
-    #print(tokenized_retain[:10])
+    def prepare_dataset(retain_set, forget_set):
+        tokenized_retain = retain_set.apply(tokenize_function, axis=1, args=(0,))
+        tokenized_forget = forget_set.apply(tokenize_function, axis=1, args=(1,))
+        tokenized = pd.concat([tokenized_retain, tokenized_forget], ignore_index=True)
+        return tokenized 
+      
+    tokenized_train = prepare_dataset(retain_train, forget_train)
+    tokenized_val = prepare_dataset(retain_val, forget_val)
+
+    train_loader = DataLoader(tokenized_train, args.batch_size, collate_fn=prepare_batch, shuffle=True)
+    val_loader = DataLoader(tokenized_val, args.batch_size, collate_fn=prepare_batch, shuffle=False)
 
     return model
 
 if __name__ == "__main__":
     args = parser.parse_args([] if "__file__" not in globals() else None)
     main(args)
-
-

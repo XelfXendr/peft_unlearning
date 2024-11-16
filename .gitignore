@@ -1,13 +1,18 @@
+# python files
 venv/
+__pycache__
 
+# downloaded models/datasets
 bitnet_b1_58-xl/
 bitnet_b1_58-large/
+semeval25-unlearning-data/
+semeval25-unlearning-model/
+semeval25-unlearning-1B-model/
 
-jupyter/semeval25-unlearning-data/
-jupyter/semeval25-unlearning-model/
-
+# logs
 logs/
 
+# metacentre job output files
 *.o[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
 *.o[0-9][0-9][0-9][0-9][0-9][0-9][0-9]
 *.e[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]

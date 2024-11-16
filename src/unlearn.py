@@ -57,14 +57,11 @@ def main(args: argparse.Namespace):
 
     unlearn(model, tokenizer, retain_train, retain_val, forget_train, forget_val, args)
 
-def unlearn(
-        model: AutoModelForCausalLM, tokenizer: AutoTokenizer, 
-        retain_train: pd.DataFrame, retain_val: pd.DataFrame, forget_train: pd.DataFrame, forget_val: pd.DataFrame,
-        args: argparse.Namespace) -> AutoModelForCausalLM:
-
-    #pipe = pipeline('text2text-generation', model=model, tokenizer=tokenizer, max_new_tokens=50)
-    #print(pipe("Today's breakfast is"))
-
+def prepare_data(
+        tokenizer: AutoTokenizer,
+        retain: pd.DataFrame, forget: pd.DataFrame,
+        args: argparse.Namespace
+        ) -> tuple[pd.Series, pd.Series]:
     def tokenize_function(example, forget: int):
         # tokenize string
         tokenized = tokenizer(example["input"], example["output"], return_tensors='pt', max_length=2048, truncation=True, )
@@ -75,7 +72,16 @@ def unlearn(
         tokenized['input_ids'] = tokenized['input_ids'].squeeze()
         tokenized['attention_mask'] = tokenized['attention_mask'].squeeze()
         return tokenized, [output_beginning, output_end], forget
+    
+    def prepare_dataset(retain_set, forget_set):
+        tokenized_retain = retain_set.apply(tokenize_function, axis=1, args=(0,))
+        tokenized_forget = forget_set.apply(tokenize_function, axis=1, args=(1,))
+        tokenized = pd.concat([tokenized_retain, tokenized_forget], ignore_index=True)
+        return tokenized 
+    
+    return prepare_dataset(retain, forget)
 
+def prepare_loader(data: pd.Series, tokenizer: AutoTokenizer, args: argparse.Namespace, shuffle: bool = False):
     def prepare_batch(data):
         inputs, ranges, tasks = zip(*data)
         # combined tokenized inputs into a single tensor
@@ -84,18 +90,18 @@ def unlearn(
         ranges = torch.tensor(np.asarray(ranges), dtype=torch.long)
         tasks = torch.tensor(np.asarray(tasks), dtype=torch.long)
         return (inputs, ranges, tasks)
-    
-    def prepare_dataset(retain_set, forget_set):
-        tokenized_retain = retain_set.apply(tokenize_function, axis=1, args=(0,))
-        tokenized_forget = forget_set.apply(tokenize_function, axis=1, args=(1,))
-        tokenized = pd.concat([tokenized_retain, tokenized_forget], ignore_index=True)
-        return tokenized 
-      
-    tokenized_train = prepare_dataset(retain_train, forget_train)
-    tokenized_val = prepare_dataset(retain_val, forget_val)
+    return DataLoader(data, batch_size=args.batch_size, collate_fn=prepare_batch, shuffle=shuffle)
 
-    train_loader = DataLoader(tokenized_train, args.batch_size, collate_fn=prepare_batch, shuffle=True)
-    val_loader = DataLoader(tokenized_val, args.batch_size, collate_fn=prepare_batch, shuffle=False)
+def unlearn(
+        model: AutoModelForCausalLM, tokenizer: AutoTokenizer, 
+        retain_train: pd.DataFrame, retain_val: pd.DataFrame, forget_train: pd.DataFrame, forget_val: pd.DataFrame,
+        args: argparse.Namespace) -> AutoModelForCausalLM:
+
+    tokenized_train = prepare_data(tokenizer, retain_train, forget_train, args)
+    tokenized_val = prepare_data(tokenizer, retain_val, forget_val, args)
+
+    train_loader = prepare_loader(tokenized_train, tokenizer, args, shuffle=True)
+    val_loader = prepare_loader(tokenized_val, tokenizer, args, shuffle=False)
 
     return model
 

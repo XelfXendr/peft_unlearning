@@ -5,24 +5,27 @@ import os
 
 
 def download_model(hf_token: str) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
-    os.makedirs("semeval25-unlearning-model", exist_ok=True)
-    snapshot_download(
-        repo_id="llmunlearningsemeval2025organization/olmo-finetuned-semeval25-unlearning",
-        token=hf_token,
-        local_dir="semeval25-unlearning-model",
-    )
+    if not os.path.isdir("semeval25-unlearning-model"):
+        os.makedirs("semeval25-unlearning-model", exist_ok=True)
+        snapshot_download(
+            repo_id="llmunlearningsemeval2025organization/olmo-finetuned-semeval25-unlearning",
+            token=hf_token,
+            local_dir="semeval25-unlearning-model",
+        )
     return AutoModelForCausalLM.from_pretrained(
         "semeval25-unlearning-model"
     ), AutoTokenizer.from_pretrained("allenai/OLMo-7B-0724-Instruct-hf")
 
 
 def download_model_1B(hf_token: str) -> AutoModelForCausalLM:
-    os.makedirs("semeval25-unlearning-1B-model", exist_ok=True)
-    snapshot_download(
-        repo_id="llmunlearningsemeval2025organization/olmo-1B-model-semeval25-unlearning",
-        token=hf_token,
-        local_dir="semeval25-unlearning-1B-model",
-    )
+    if not os.path.isdir("semeval25-unlearning-1B-model"):
+        os.makedirs("semeval25-unlearning-1B-model", exist_ok=True)
+        snapshot_download(
+            repo_id="llmunlearningsemeval2025organization/olmo-1B-model-semeval25-unlearning",
+            token=hf_token,
+            local_dir="semeval25-unlearning-1B-model",
+        )
+
     return AutoModelForCausalLM.from_pretrained(
         "semeval25-unlearning-1B-model"
     ), AutoTokenizer.from_pretrained("allenai/OLMo-1B-0724-hf")
@@ -31,14 +34,16 @@ def download_model_1B(hf_token: str) -> AutoModelForCausalLM:
 def download_datasets(
     hf_token: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    os.makedirs("semeval25-unlearning-data", exist_ok=True)
-    ## Fetch and load dataset:
-    snapshot_download(
-        repo_id="llmunlearningsemeval2025organization/semeval25-unlearning-dataset-public",
-        token=hf_token,
-        local_dir="semeval25-unlearning-data",
-        repo_type="dataset",
-    )
+    if not os.path.isdir("semeval25-unlearning-data"):
+        os.makedirs("semeval25-unlearning-data", exist_ok=True)
+        ## Fetch and load dataset:
+        snapshot_download(
+            repo_id="llmunlearningsemeval2025organization/semeval25-unlearning-dataset-public",
+            token=hf_token,
+            local_dir="semeval25-unlearning-data",
+            repo_type="dataset",
+        )
+        
     retain_train_df = pd.read_parquet(
         "semeval25-unlearning-data/data/retain_train-00000-of-00001.parquet",
         engine="pyarrow",

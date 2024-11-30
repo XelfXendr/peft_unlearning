@@ -61,3 +61,12 @@ def download_datasets(
         engine="pyarrow",
     )  # Forget split: validation set
     return retain_train_df, retain_validation_df, forget_train_df, forget_validation_df
+
+def main():
+    hf_token = "***REMOVED***"
+    download_model(hf_token)
+    download_model_1B(hf_token)
+    download_datasets(hf_token)
+
+if __name__ == "__main__":
+    main()

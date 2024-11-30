@@ -1,6 +1,5 @@
 import re
 import os
-import importlib
 import datetime
 import argparse
 import pandas as pd
@@ -8,7 +7,7 @@ import numpy as np
 
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from transformers.models.olmo import OlmoForCausalLM
+#from transformers.models.olmo import OlmoForCausalLM
 from download_model import download_model, download_datasets, download_model_1B
 import metrics
 from tqdm.auto import tqdm
@@ -366,9 +365,6 @@ def unlearn(
 
     train_loader = prepare_loader(tokenized_train, tokenizer, args, shuffle=True)
     val_loader = prepare_loader(tokenized_val, tokenizer, args, shuffle=False)
-
-    # figure out the 
-    data_module = importlib.import_module("semeval25-unlearning-data.evaluate_generations")
 
     print("Preparing model.")
     unlearn_model = UnlearningModel(

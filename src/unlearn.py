@@ -1,9 +1,11 @@
 import re
 import os
+import importlib
 import datetime
 import argparse
 import pandas as pd
 import numpy as np
+
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.models.olmo import OlmoForCausalLM
@@ -12,7 +14,9 @@ from tqdm.auto import tqdm
 
 import torch
 import torch.utils
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
@@ -26,6 +30,8 @@ parser.add_argument("--device", default=None, type=str, help="Device to use.")
 parser.add_argument("--batch_size", default=32, type=int, help="Batch size.")
 parser.add_argument("--epochs", default=10, type=int, help="Number of epochs.")
 parser.add_argument("--learning_rate", default=1e-4, type=float, help="Learning rate.")
+
+parser.add_argument("--beta", default=0.1, type=float, help="Beta for NPO loss.")
 
 
 class LoRALinear(torch.nn.Module):
@@ -99,6 +105,8 @@ class UnlearningModel(torch.nn.Module):
         self._args: argparse.Namespace = args
         self._llm: LoRAModel = LoRAModel(model, 2)
 
+        self.logdir, self._writers = args.logdir, {}
+
         self._optimizer = torch.optim.Adam(self.parameters(), lr=args.learning_rate)
         self.to(self._device)
 
@@ -111,41 +119,104 @@ class UnlearningModel(torch.nn.Module):
         validation_data: DataLoader,
         args: argparse.Namespace,
     ):
-        self.train()
-
         for epoch in range(args.epochs):
-            progress_bar = tqdm(
-                range(len(train_data)), desc=f"Epoch {epoch}", unit="bat"
+            self.train()
+            epoch_message = f"Epoch={epoch+1}/{args.epochs}"
+            data_and_progress = tqdm(
+                train_data, epoch_message, unit="batch", leave=False 
             )
-            for batch in train_data:
-                inputs, answer_mask, ranges, tasks = batch
 
-                # reference output
-                self._llm.only_backbone(True)
-                with torch.no_grad():
-                    reference_output = self._llm(
-                        torch.as_tensor(inputs.input_ids),
-                        attention_mask=torch.as_tensor(inputs.attention_mask),
-                    )
+            total_loss = 0.
+            count = 0
 
-                # actual output
-                self._llm.only_backbone(False)
-                outputs = self._llm(
-                    torch.as_tensor(inputs.input_ids),
-                    attention_mask=torch.as_tensor(inputs.attention_mask),
-                )
+            for (inputs, answer_mask, ranges, tasks) in data_and_progress:
+                inputs.input_ids = inputs.input_ids.to(self._device)
+                inputs.attention_mask = inputs.attention_mask.to(self._device)
+                answer_mask = answer_mask.to(self._device)
+                ranges = ranges.to(self._device)
+                tasks = tasks.to(self._device)
 
-                # something something loss.backward()
+                loss = self.train_step(inputs, answer_mask, tasks)
+
+                total_loss += loss
+                count += 1
+
+                data_and_progress.set_postfix({"loss": total_loss / count})
+            
+            self.add_logs("train", {"loss": total_loss / count}, epoch+1)
+        pass
+
+    def train_step(self, inputs, answer_mask, tasks):
+        # reference output
+        self._llm.only_backbone(True)
+        with torch.no_grad():
+            reference_output = self._llm(
+                torch.as_tensor(inputs.input_ids),
+                attention_mask=torch.as_tensor(inputs.attention_mask),
+            )
+
+        # actual output
+        self._llm.only_backbone(False)
+        outputs = self._llm(
+            torch.as_tensor(inputs.input_ids),
+            attention_mask=torch.as_tensor(inputs.attention_mask),
+        )
+
+        ref_logprob = F.log_softmax(
+            reference_output.logits[:, :-1, :], dim=-1
+        ).gather(2, inputs.input_ids[:, 1:].unsqueeze(-1))
+        logprob = F.log_softmax(outputs.logits[:, :-1, :], dim=-1).gather(
+            2, inputs.input_ids[:, 1:].unsqueeze(-1)
+        )
+
+        forget_logprob = logprob[tasks == 1][
+            answer_mask[tasks == 1][:, 1:] == 1
+        ]
+        forget_ref_logprob = ref_logprob[tasks == 1][
+            answer_mask[tasks == 1][:, 1:] == 1
+        ]
+
+        npo_loss: torch.Tensor = (
+            -F.logsigmoid(
+                args.beta * (forget_ref_logprob - forget_logprob)
+            ).mean()
+            * 2
+            / args.beta
+        )
+        npo_loss = npo_loss.nan_to_num()
+
+        retain_logprob = logprob[tasks == 0][
+            answer_mask[tasks == 0][:, 1:] == 1
+        ]
+
+        retain_loss = -retain_logprob.mean()
+        retain_loss = retain_loss.nan_to_num()
+
+        loss = npo_loss + retain_loss
+
+        loss.backward()
+        self._optimizer.step()
+        self._optimizer.zero_grad()
+
+        return loss.item()
                 
-                print(outputs.logits.mean())
-                outputs.logits.mean().backward()
-
-                self._optimizer.step()
-                self._optimizer.zero_grad()
-                progress_bar.update(1)
 
     def forward(self, x, **xs):
         return self._llm(x, **xs)
+
+    def writer(self, writer):
+        """Possibly create and return a TensorBoard writer for the given name."""
+        if writer not in self._writers:
+            self._writers[writer] = SummaryWriter(os.path.join(self.logdir, writer))
+        return self._writers[writer]
+
+    def add_logs(self, writer, logs, step):
+        """Log the given dictionary to TensorBoard with a given name and step number."""
+        if logs and self.logdir:
+            for key, value in logs.items():
+                self.writer(writer).add_scalar(key, value, step)
+            self.writer(writer).flush()
+
 
 
 def main(args: argparse.Namespace):
@@ -262,6 +333,10 @@ def unlearn(
 
     train_loader = prepare_loader(tokenized_train, tokenizer, args, shuffle=True)
     val_loader = prepare_loader(tokenized_val, tokenizer, args, shuffle=False)
+
+    # figure out the 
+    data_module = importlib.import_module("semeval25-unlearning-data.evaluate_generations")
+    print(dir(data_module))
 
     print("Preparing model.")
     unlearn_model = UnlearningModel(

@@ -10,6 +10,7 @@ import numpy as np
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from transformers.models.olmo import OlmoForCausalLM
 from download_model import download_model, download_datasets, download_model_1B
+import metrics
 from tqdm.auto import tqdm
 
 import torch
@@ -17,6 +18,7 @@ import torch.utils
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from safetensors.torch import save_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
@@ -24,7 +26,7 @@ parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
 parser.add_argument(
     "--threads", default=1, type=int, help="Maximum number of threads to use."
 )
-parser.add_argument("--seed", default=None, type=int, help="Random seed.")
+parser.add_argument("--seed", default=42, type=int, help="Random seed.")
 parser.add_argument("--device", default=None, type=str, help="Device to use.")
 
 parser.add_argument("--batch_size", default=32, type=int, help="Batch size.")
@@ -93,7 +95,7 @@ class LoRAModel(torch.nn.Module):
 
 
 class UnlearningModel(torch.nn.Module):
-    def __init__(self, model: AutoModelForCausalLM, args: argparse.Namespace):
+    def __init__(self, model: AutoModelForCausalLM, tokenizer: AutoTokenizer, args: argparse.Namespace):
         super().__init__()
         self._device: torch.device = torch.device(
             args.device
@@ -104,6 +106,7 @@ class UnlearningModel(torch.nn.Module):
         )
         self._args: argparse.Namespace = args
         self._llm: LoRAModel = LoRAModel(model, 2)
+        self._tokenizer = tokenizer
 
         self.logdir, self._writers = args.logdir, {}
 
@@ -111,14 +114,15 @@ class UnlearningModel(torch.nn.Module):
         self.to(self._device)
 
     def get_model(self) -> AutoModelForCausalLM:
-        return self._llm
+        return self
 
     def unlearn(
         self,
         train_data: DataLoader,
         validation_data: DataLoader,
         args: argparse.Namespace,
-    ):
+    ):  
+        
         for epoch in range(args.epochs):
             self.train()
             epoch_message = f"Epoch={epoch+1}/{args.epochs}"
@@ -142,8 +146,10 @@ class UnlearningModel(torch.nn.Module):
                 count += 1
 
                 data_and_progress.set_postfix({"loss": total_loss / count})
+                print(count)
             
             self.add_logs("train", {"loss": total_loss / count}, epoch+1)
+            self.eval(epoch+1)
         pass
 
     def train_step(self, inputs, answer_mask, tasks):
@@ -217,6 +223,29 @@ class UnlearningModel(torch.nn.Module):
                 self.writer(writer).add_scalar(key, value, step)
             self.writer(writer).flush()
 
+    def eval(self, step):
+        device = self._device
+        loraLLM = self._llm
+        loraLLM.only_backbone(False)
+        results = metrics.evaluate(loraLLM._llm, self._tokenizer)
+        loraLLM._llm.to(device)
+
+        self.add_logs("train", {
+            "retain_regurgitation_score": results['train_retain-set']['overall-regurgitation-score'],
+            "retain_knowledge_score": results['train_retain-set']['overall-knowledge-score'],
+            "forget_regurgitation_score": results['train_forget-set']['overall-regurgitation-score'],
+            "forget_knowledge_score": results['train_forget-set']['overall-knowledge-score'],
+            "mia_loss_acc": results['mia_loss_acc'],
+            "aggregate_score": results['train_aggregate_score'],
+        }, step)
+
+        self.add_logs("validation", {
+            "retain_regurgitation_score": results['validation_retain-set']['overall-regurgitation-score'],
+            "retain_knowledge_score": results['validation_retain-set']['overall-knowledge-score'],
+            "forget_regurgitation_score": results['validation_forget-set']['overall-regurgitation-score'],
+            "forget_knowledge_score": results['validation_forget-set']['overall-knowledge-score'],
+            "aggregate_score": results['validation_aggregate_score'],
+        }, step)
 
 
 def main(args: argparse.Namespace):
@@ -248,8 +277,12 @@ def main(args: argparse.Namespace):
     hf_token = "***REMOVED***"
     model, tokenizer = download_model_1B(hf_token)
     retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
+    
+    unlearned_model = unlearn(model, tokenizer, retain_train, retain_val, forget_train, forget_val, args)
 
-    unlearn(model, tokenizer, retain_train, retain_val, forget_train, forget_val, args)
+    print("Saving model.")    
+    os.makedirs(args.logdir, exist_ok=True)
+    save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
 
 
 # prepares the dataset for training/validation by tokenizing the strings
@@ -336,11 +369,11 @@ def unlearn(
 
     # figure out the 
     data_module = importlib.import_module("semeval25-unlearning-data.evaluate_generations")
-    print(dir(data_module))
 
     print("Preparing model.")
     unlearn_model = UnlearningModel(
         model=model,
+        tokenizer=tokenizer,
         args=args,
     )
 

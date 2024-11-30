@@ -5,7 +5,7 @@
 
 # storage is shared via NFSv4
 DATADIR="/storage/brno2/home/$LOGNAME/llm_thesis"
-LOGDIR="/storage/brno2/home/$LOGNAME/llm_thesis/logs"
+LOGDIR="/storage/brno2/home/$LOGNAME/llm_thesis_logs"
 
 # sets the scratchdir as a temporary dir, bypassing the metacentre disk quota
 export TMPDIR=$SCRATCHDIR
@@ -24,4 +24,4 @@ venv/bin/pip install --no-cache-dir -r llm_thesis/requirements.txt
 
 # ... the computation ...
 cd llm_thesis/src
-$SCRATCHDIR/venv/bin/python unlearn.py --logdir=$LOGDIR --threads=4 --batch_size=32 --epochs=10 --beta=$BETA --learning_rate=$LR
+$SCRATCHDIR/venv/bin/python unlearn.py --logdir=$LOGDIR --threads=4 --batch_size=4 --epochs=10 --beta=$BETA --learning_rate=$LR

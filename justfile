@@ -24,5 +24,5 @@ run *file_and_args:
 run *file_and_args:
 	cd {{invocation_directory()}}; {{justfile_directory()}}\venv\Scripts\python {{file_and_args}}
 
-metacentrum-jupyter:
-	ssh -L 8308:127.0.0.1:8308 -t ***REMOVED*** "qsub -q gpu -l select=1:ncpus=4:ngpus=1:mem=16gb:gpu_mem=16gb:scratch_local=32gb -I"
+metacentrum-port:
+	ssh -L 8308:127.0.0.1:8308 -t ***REMOVED***

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import os
 import json
 import glob
@@ -21,6 +23,7 @@ from sklearn.metrics import roc_curve, auc
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
 from download_model import download_model_1B
+
 
 def default_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -70,7 +73,7 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
         dataset = pd.read_parquet(
             input_file,
             engine="pyarrow",
-        ) 
+        )
 
         output_dic = defaultdict(
             lambda: {
@@ -83,9 +86,7 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
             }
         )
 
-        with accelerator.split_between_processes(
-            dataset, apply_padding=True
-        ) as data:
+        with accelerator.split_between_processes(dataset, apply_padding=True) as data:
             for idx in tqdm(range(len(data["input"]))):
                 question, answer = data["input"][idx], data["output"][idx]
                 output_dic[accelerator.process_index]["id"].append(data["id"][idx])
@@ -100,9 +101,7 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
                 input_ids = tok_input.input_ids.to(model.device)
                 attn_mask = tok_input.attention_mask.to(model.device)
 
-                combined_tok_input = tokenizer(
-                    question + answer, return_tensors="pt"
-                )
+                combined_tok_input = tokenizer(question + answer, return_tensors="pt")
                 combined_input_ids = combined_tok_input.input_ids.to(model.device)
                 combined_attn_mask = combined_tok_input.attention_mask.to(model.device)
                 combined_target_ids = combined_input_ids.clone()
@@ -110,7 +109,7 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
                 with torch.no_grad():
                     out = model.generate(
                         input_ids,
-                        attention_mask = attn_mask,
+                        attention_mask=attn_mask,
                         max_new_tokens=args.max_new_tokens,
                         do_sample=False,
                         use_cache=True,
@@ -125,7 +124,11 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
                     output_dic[accelerator.process_index]["model_output"].append(output)
 
                     # For Perplexity
-                    out = model(combined_input_ids, attention_mask=combined_attn_mask, labels=combined_target_ids)
+                    out = model(
+                        combined_input_ids,
+                        attention_mask=combined_attn_mask,
+                        labels=combined_target_ids,
+                    )
                     neg_log_likelihood = out.loss.item()
                     output_dic[accelerator.process_index]["nll"].append(
                         neg_log_likelihood
@@ -134,17 +137,20 @@ def inference(args, model: AutoModelForCausalLM, tokenizer: AutoTokenizer):
             accelerator.wait_for_everyone()
 
             output_df = pd.DataFrame.from_dict(output_dic[accelerator.process_index])
-            output_file_name = f"{args.output_dir}/{split}_{accelerator.process_index}.csv"
+            output_file_name = (
+                f"{args.output_dir}/{split}_{accelerator.process_index}.csv"
+            )
             output_df.to_csv(output_file_name, index=False)
 
+
 def mia_attacks(args, model, tokenizer):
-    member_file = args.mia_data_path + 'member.jsonl'
-    nonmember_file = args.mia_data_path + 'nonmember.jsonl'
+    member_file = args.mia_data_path + "member.jsonl"
+    nonmember_file = args.mia_data_path + "nonmember.jsonl"
 
     accelerator = Accelerator()
     model.to(accelerator.device)
 
-    for dataset, train_file in [('member', member_file), ('nonmember', nonmember_file)]:
+    for dataset, train_file in [("member", member_file), ("nonmember", nonmember_file)]:
         data_files = {}
         dataset_args = {}
         if train_file is not None:
@@ -156,37 +162,43 @@ def mia_attacks(args, model, tokenizer):
         )
         train_dataset = raw_datasets["train"]
 
-        output_dic = defaultdict(lambda :{'id': [], 'nll': []})
+        output_dic = defaultdict(lambda: {"id": [], "nll": []})
 
-        with accelerator.split_between_processes(train_dataset, apply_padding=True) as data:
-            for idx in tqdm(range(len(data['document']))):
+        with accelerator.split_between_processes(
+            train_dataset, apply_padding=True
+        ) as data:
+            for idx in tqdm(range(len(data["document"]))):
                 document = data["document"][idx]
-                output_dic[accelerator.process_index]['id'].append(data["id"][idx])
-                input_ids = tokenizer(
-                    document,
-                    return_tensors='pt'
-                ).input_ids.to(model.device)
+                output_dic[accelerator.process_index]["id"].append(data["id"][idx])
+                input_ids = tokenizer(document, return_tensors="pt").input_ids.to(
+                    model.device
+                )
 
                 target_ids = input_ids.clone()
 
                 with torch.no_grad():
                     out = model(input_ids, labels=target_ids)
                     neg_log_likelihood = out.loss.item()
-                    output_dic[accelerator.process_index]['nll'].append(neg_log_likelihood)
+                    output_dic[accelerator.process_index]["nll"].append(
+                        neg_log_likelihood
+                    )
 
             accelerator.wait_for_everyone()
-            
+
             output_df = pd.DataFrame.from_dict(output_dic[accelerator.process_index])
-            
-            results_dir = os.path.join(args.output_dir, 'mia_results')
+
+            results_dir = os.path.join(args.output_dir, "mia_results")
             Path(results_dir).mkdir(parents=True, exist_ok=True)
-            output_file_name = f"{results_dir}/{dataset}_{accelerator.process_index}.csv"
+            output_file_name = (
+                f"{results_dir}/{dataset}_{accelerator.process_index}.csv"
+            )
             output_df.to_csv(output_file_name, index=False)
+
 
 def compute_auc(member_loss, nonmember_loss):
     assert not np.any(np.isnan(member_loss))
     assert not np.any(np.isnan(nonmember_loss))
-    combined_loss = member_loss + nonmember_loss 
+    combined_loss = member_loss + nonmember_loss
     combined_loss = -1 * np.array(combined_loss)
     combined_labels = len(member_loss) * [1] + len(nonmember_loss) * [0]
     fp, tp, _ = roc_curve(combined_labels, combined_loss)
@@ -195,66 +207,85 @@ def compute_auc(member_loss, nonmember_loss):
 
     return auc_score
 
+
 def compute_metrics(args) -> dict:
-    scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'], use_stemmer=True)
+    scorer = rouge_scorer.RougeScorer(["rouge1", "rougeL"], use_stemmer=True)
 
     results = {}
     train_aggregate_scores_list = []
     validation_aggregate_scores_list = []
-    for (split, scores_list) in [
-        ('train_forget', train_aggregate_scores_list),
-        ('train_retain', train_aggregate_scores_list),
-        ('validation_forget', validation_aggregate_scores_list),
-        ('validation_retain', validation_aggregate_scores_list)
-        ]:
-        files = glob.glob(args.output_dir + '/{}_*.csv'.format(split))
+    for split, scores_list in [
+        ("train_forget", train_aggregate_scores_list),
+        ("train_retain", train_aggregate_scores_list),
+        ("validation_forget", validation_aggregate_scores_list),
+        ("validation_retain", validation_aggregate_scores_list),
+    ]:
+        files = glob.glob(args.output_dir + "/{}_*.csv".format(split))
         df_list = [pd.read_csv(f) for f in files]
         _ = [os.remove(f) for f in files]
         df = pd.concat(df_list, ignore_index=True)
 
-        df['regurgitation-score-rouge-1'] = None
-        df['regurgitation-score'] = None
-        df['knowledge-score'] = None
-        ground_truths = df['expected_output'].tolist()
-        gen_outputs = df['model_output'].tolist()
+        df["regurgitation-score-rouge-1"] = None
+        df["regurgitation-score"] = None
+        df["knowledge-score"] = None
+        ground_truths = df["expected_output"].tolist()
+        gen_outputs = df["model_output"].tolist()
 
         for i, (gen, gt) in enumerate(zip(gen_outputs, ground_truths)):
-            if df.loc[i, 'id'][:-1].endswith('sc'):
+            if df.loc[i, "id"][:-1].endswith("sc"):
                 rouge_scores = scorer.score(str(gt), str(gen))
-                df.loc[i, 'regurgitation-score-rouge-1'] = rouge_scores['rouge1'].recall
-                df.loc[i, 'regurgitation-score'] = rouge_scores['rougeL'].recall
-            elif df.loc[i, 'id'][:-1].endswith('qa'):
-                 df.loc[i, 'knowledge-score'] = int(str(gt).strip().lower() == str(gen).strip().lower())
+                df.loc[i, "regurgitation-score-rouge-1"] = rouge_scores["rouge1"].recall
+                df.loc[i, "regurgitation-score"] = rouge_scores["rougeL"].recall
+            elif df.loc[i, "id"][:-1].endswith("qa"):
+                df.loc[i, "knowledge-score"] = int(
+                    str(gt).strip().lower() == str(gen).strip().lower()
+                )
 
-        results[split+'-set'] = {'overall-regurgitation-score': np.mean(df['regurgitation-score']), 'overall-knowledge-score': np.mean(df['knowledge-score'])}
-        split_aggregate_scores_dict = df.groupby('task')[['regurgitation-score', 'knowledge-score']].mean().to_dict(orient='index')
-        results[split+'-set'].update(split_aggregate_scores_dict)
-        split_aggregate_score_values = [float(val) for inner in split_aggregate_scores_dict.values() for val in inner.values()]
-        if 'forget' in split:
-            split_aggregate_score_values = [(1 - val) for val in split_aggregate_score_values]
+        results[split + "-set"] = {
+            "overall-regurgitation-score": np.mean(df["regurgitation-score"]),
+            "overall-knowledge-score": np.mean(df["knowledge-score"]),
+        }
+        split_aggregate_scores_dict = (
+            df.groupby("task")[["regurgitation-score", "knowledge-score"]]
+            .mean()
+            .to_dict(orient="index")
+        )
+        results[split + "-set"].update(split_aggregate_scores_dict)
+        split_aggregate_score_values = [
+            float(val)
+            for inner in split_aggregate_scores_dict.values()
+            for val in inner.values()
+        ]
+        if "forget" in split:
+            split_aggregate_score_values = [
+                (1 - val) for val in split_aggregate_score_values
+            ]
 
         scores_list.extend(split_aggregate_score_values)
 
     if args.mia_data_path is not None:
-        mia_results_dir = os.path.join(args.output_dir, 'mia_results')
+        mia_results_dir = os.path.join(args.output_dir, "mia_results")
         mia_results = {}
-        for dataset in ['member', 'nonmember']:
-            files = glob.glob(mia_results_dir + '/{}_*.csv'.format(dataset))
+        for dataset in ["member", "nonmember"]:
+            files = glob.glob(mia_results_dir + "/{}_*.csv".format(dataset))
             df_list = [pd.read_csv(f) for f in files]
             df = pd.concat(df_list, ignore_index=True)
-            mia_results[dataset] = df['nll'].tolist()
-        
+            mia_results[dataset] = df["nll"].tolist()
+
         shutil.rmtree(mia_results_dir)
 
-        auc = compute_auc(mia_results['member'], mia_results['nonmember'])
-        results['mia_loss_acc'] = auc
+        auc = compute_auc(mia_results["member"], mia_results["nonmember"])
+        results["mia_loss_acc"] = auc
         train_aggregate_scores_list.append(auc)
         validation_aggregate_scores_list.append(auc)
 
-    results['train_aggregate_score'] = harmonic_mean(train_aggregate_scores_list)
-    results['validation_aggregate_score'] = harmonic_mean(validation_aggregate_scores_list)
+    results["train_aggregate_score"] = harmonic_mean(train_aggregate_scores_list)
+    results["validation_aggregate_score"] = harmonic_mean(
+        validation_aggregate_scores_list
+    )
 
     return results
+
 
 def evaluate(
     model: AutoModelForCausalLM,
@@ -272,12 +303,14 @@ def evaluate(
 
     return results
 
+
 def main():
     hf_token = "***REMOVED***"
     model, tokenizer = download_model_1B(hf_token)
 
     results = evaluate(model, tokenizer)
     print(results)
+
 
 if __name__ == "__main__":
     main()

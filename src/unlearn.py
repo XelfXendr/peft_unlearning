@@ -34,6 +34,11 @@ parser.add_argument("--learning_rate", default=1e-4, type=float, help="Learning 
 
 parser.add_argument("--beta", default=0.1, type=float, help="Beta for NPO loss.")
 
+parser.add_argument("--npo_mult", default=1.0, type=float, help="Forget loss multiplier.")
+parser.add_argument("--rt_mult", default=1.0, type=float, help="Retain loss multiplier.")
+parser.add_argument("--kl_mult", default=0.0, type=float, help="Retain KL divergence loss multiplier.")
+
+parser.add_argument("--evaluate_every", default=2, type=int, help="Evaluate every n epochs.")
 
 class LoRALinear(torch.nn.Module):
     def __init__(self, original: torch.nn.Linear, rank: int):
@@ -130,7 +135,11 @@ class UnlearningModel(torch.nn.Module):
             )
 
             total_loss = 0.
-            count = 0
+            npo_loss = 0.
+            retain_loss = 0.
+            kl_retain_loss = 0.
+            forget_count = 0
+            retain_count = 0
 
             for (inputs, answer_mask, ranges, tasks) in data_and_progress:
                 inputs.input_ids = inputs.input_ids.to(self._device)
@@ -139,16 +148,26 @@ class UnlearningModel(torch.nn.Module):
                 ranges = ranges.to(self._device)
                 tasks = tasks.to(self._device)
 
-                loss = self.train_step(inputs, answer_mask, tasks)
+                losses = self.train_step(inputs, answer_mask, tasks)
 
-                total_loss += loss
-                count += 1
+                total_loss += losses["total_loss"]
+                npo_loss += losses["npo_loss"]
+                retain_loss += losses["retain_loss"]
+                kl_retain_loss += losses["kl_retain_loss"]
+                forget_count += losses["forget_count"]
+                retain_count += losses["retain_count"]
 
-                data_and_progress.set_postfix({"loss": total_loss / count})
-                print(count)
+                data_and_progress.set_postfix({"loss": total_loss / (forget_count + retain_count)})
             
-            self.add_logs("train", {"loss": total_loss / count}, epoch+1)
-            self.eval(epoch+1)
+            self.add_logs("train", {
+                "total_loss": total_loss / (forget_count + retain_count),
+                "npo_loss": npo_loss / forget_count,
+                "retain_loss": retain_loss / retain_count,
+                "kl_retain_loss": kl_retain_loss / retain_count,
+            }, epoch+1)
+
+            if (epoch+1) % args.evaluate_every == 0:
+                self.eval(epoch+1)
         pass
 
     def train_step(self, inputs, answer_mask, tasks):
@@ -183,27 +202,44 @@ class UnlearningModel(torch.nn.Module):
 
         npo_loss: torch.Tensor = (
             -F.logsigmoid(
-                args.beta * (forget_ref_logprob - forget_logprob)
+                self._args.beta * (forget_ref_logprob - forget_logprob)
             ).mean()
             * 2
-            / args.beta
+            / self._args.beta
         )
         npo_loss = npo_loss.nan_to_num()
 
         retain_logprob = logprob[tasks == 0][
             answer_mask[tasks == 0][:, 1:] == 1
         ]
+        retain_ref_logprob = ref_logprob[tasks == 0][
+            answer_mask[tasks == 0][:, 1:] == 1
+        ]
 
         retain_loss = -retain_logprob.mean()
         retain_loss = retain_loss.nan_to_num()
 
-        loss = npo_loss + retain_loss
+        kl_retain_loss = F.kl_div(
+            retain_logprob, retain_ref_logprob, reduction="batchmean", log_target=True
+        ).nan_to_num()
+
+        loss = \
+            self._args.npo_mult * npo_loss \
+            + self._args.rt_mult * retain_loss \
+            + self._args.kl_mult * kl_retain_loss
 
         loss.backward()
         self._optimizer.step()
         self._optimizer.zero_grad()
 
-        return loss.item()
+        return {
+            "total_loss": loss.item(),
+            "npo_loss": npo_loss.item(),
+            "retain_loss": retain_loss.item(),
+            "kl_retain_loss": kl_retain_loss.item(),
+            "forget_count": tasks.sum().item(),
+            "retain_count": (~tasks).sum().item(),
+        }
                 
 
     def forward(self, x, **xs):

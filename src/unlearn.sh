@@ -24,4 +24,14 @@ venv/bin/pip install --no-cache-dir -r llm_thesis/requirements.txt
 
 # ... the computation ...
 cd llm_thesis/src
-$SCRATCHDIR/venv/bin/python unlearn.py --logdir=$LOGDIR --threads=4 --batch_size=4 --epochs=10 --beta=$BETA --learning_rate=$LR
+$SCRATCHDIR/venv/bin/python unlearn.py \
+    --logdir=$LOGDIR \
+    --threads=4 \
+    --batch_size=4 \
+    --epochs=$EP \
+    --evaluate_every=2 \
+    --beta=$BETA \
+    --learning_rate=$LR \
+    --npo_mult=$NPO \
+    --rt_mult=$RT \
+    --kl_mult=$KL

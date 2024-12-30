@@ -15,7 +15,7 @@ import torch.utils
 from safetensors.torch import save_model
 
 from models import UnlearningModel
-from datasets import prepare_data, prepare_loader
+from unlearn_datasets import prepare_data, prepare_loader
 from download_model import download_model, download_datasets, download_model_1B
 
 parser = argparse.ArgumentParser()

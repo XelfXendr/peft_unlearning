@@ -16,3 +16,4 @@ rouge-score
 scikit-learn
 tensorboard
 safetensors
+matplotlib

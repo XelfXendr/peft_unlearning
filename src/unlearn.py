@@ -19,6 +19,9 @@ from datasets import prepare_data, prepare_loader
 from download_model import download_model, download_datasets, download_model_1B
 
 parser = argparse.ArgumentParser()
+parser.add_argument(
+    "--model", default="1B", type=str, choices=["1B", "7B"], help="Model to use."
+)
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
 
 parser.add_argument(
@@ -78,7 +81,11 @@ def main(args: argparse.Namespace):
     )
 
     hf_token = "***REMOVED***"
-    model, tokenizer = download_model_1B(hf_token)
+    if args.model == "7B":
+        model, tokenizer = download_model(hf_token)
+    else:
+        model, tokenizer = download_model_1B(hf_token)
+    
     retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
 
     unlearned_model = unlearn(

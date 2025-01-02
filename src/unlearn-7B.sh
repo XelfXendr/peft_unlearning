@@ -35,4 +35,6 @@ $SCRATCHDIR/venv/bin/python unlearn.py \
     --learning_rate=$LR \
     --npo_mult=$NPO \
     --rt_mult=$RT \
-    --kl_mult=$KL
+    --kl_mult=$KL \
+    --lora_rank=$RANK \
+    --lora_merge_every=$MERGE

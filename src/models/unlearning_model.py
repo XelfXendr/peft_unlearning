@@ -26,7 +26,7 @@ class UnlearningModel(torch.nn.Module):
             else "cpu"
         )
         self._args: argparse.Namespace = args
-        self._llm: LoRAModel = LoRAModel(model, 2)
+        self._llm: LoRAModel = LoRAModel(model, args.lora_rank)
         self._tokenizer = tokenizer
 
         self.logdir, self._writers = args.logdir, {}

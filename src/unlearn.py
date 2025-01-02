@@ -46,6 +46,7 @@ parser.add_argument(
     "--kl_mult", default=0.0, type=float, help="Retain KL divergence loss multiplier."
 )
 
+parser.add_argument("--lora_rank", default=2, type=int, help="Rank of the LoRAs.")
 parser.add_argument(
     "--lora_merge_every",
     default=-1,

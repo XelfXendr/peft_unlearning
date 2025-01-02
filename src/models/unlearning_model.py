@@ -59,8 +59,6 @@ class UnlearningModel(torch.nn.Module):
             retain_count = 0
 
             for inputs, answer_mask, ranges, tasks in data_and_progress:
-                train_steps += 1
-
                 inputs.input_ids = inputs.input_ids.to(self._device)
                 inputs.attention_mask = inputs.attention_mask.to(self._device)
                 answer_mask = answer_mask.to(self._device)
@@ -69,6 +67,7 @@ class UnlearningModel(torch.nn.Module):
 
                 losses = self.train_step(inputs, answer_mask, tasks)
 
+                train_steps += 1
                 if (
                     args.lora_merge_every > 0
                     and train_steps % args.lora_merge_every == 0

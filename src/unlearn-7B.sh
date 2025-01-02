@@ -30,7 +30,7 @@ $SCRATCHDIR/venv/bin/python unlearn.py \
     --threads=4 \
     --batch_size=4 \
     --epochs=$EP \
-    --evaluate_every=2 \
+    --evaluate_every=5 \
     --beta=$BETA \
     --learning_rate=$LR \
     --npo_mult=$NPO \

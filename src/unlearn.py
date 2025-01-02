@@ -47,6 +47,13 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "--lora_merge_every",
+    default=-1,
+    type=int,
+    help="Merge LoRAs every n batches. `-1` means never.",
+)
+
+parser.add_argument(
     "--evaluate_every", default=2, type=int, help="Evaluate every n epochs."
 )
 parser.add_argument(
@@ -85,7 +92,7 @@ def main(args: argparse.Namespace):
         model, tokenizer = download_model(hf_token)
     else:
         model, tokenizer = download_model_1B(hf_token)
-    
+
     retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
 
     unlearned_model = unlearn(

@@ -39,3 +39,7 @@ class LoRAModel(torch.nn.Module):
 
     def forward(self, x, **xs):
         return self._llm(x, **xs)
+
+    def merge_loras(self):
+        for lora in self._loras:
+            lora.merge()

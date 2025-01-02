@@ -43,6 +43,7 @@ class UnlearningModel(torch.nn.Module):
         validation_data: DataLoader,
         args: argparse.Namespace,
     ):
+        train_steps = 0
         for epoch in range(args.epochs):
             self.train()
             epoch_message = f"Epoch={epoch+1}/{args.epochs}"
@@ -58,6 +59,8 @@ class UnlearningModel(torch.nn.Module):
             retain_count = 0
 
             for inputs, answer_mask, ranges, tasks in data_and_progress:
+                train_steps += 1
+
                 inputs.input_ids = inputs.input_ids.to(self._device)
                 inputs.attention_mask = inputs.attention_mask.to(self._device)
                 answer_mask = answer_mask.to(self._device)
@@ -65,6 +68,12 @@ class UnlearningModel(torch.nn.Module):
                 tasks = tasks.to(self._device)
 
                 losses = self.train_step(inputs, answer_mask, tasks)
+
+                if (
+                    args.lora_merge_every > 0
+                    and train_steps % args.lora_merge_every == 0
+                ):
+                    self._llm.merge_loras()
 
                 total_loss += losses["total_loss"]
                 npo_loss += losses["npo_loss"]

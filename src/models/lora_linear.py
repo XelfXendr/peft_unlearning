@@ -1,5 +1,6 @@
 import torch
 
+
 class LoRALinear(torch.nn.Module):
     def __init__(self, original: torch.nn.Linear, rank: int):
         super().__init__()
@@ -18,3 +19,8 @@ class LoRALinear(torch.nn.Module):
             return self.original(x)
         else:
             return self.original(x) + self.B(self.A(x))
+
+    def merge(self):
+        self.original.weight += self.A.weight @ self.B.weight
+        torch.nn.init.xavier_normal_(self.A.weight)
+        torch.nn.init.zeros_(self.B.weight)

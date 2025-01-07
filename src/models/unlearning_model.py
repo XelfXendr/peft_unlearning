@@ -34,8 +34,8 @@ class UnlearningModel(torch.nn.Module):
         self._optimizer = torch.optim.Adam(self.parameters(), lr=args.learning_rate)
         self.to(self._device)
 
-    def get_model(self) -> AutoModelForCausalLM:
-        return self
+    def extract_model(self) -> AutoModelForCausalLM:
+        return self._llm.extract_model()
 
     def unlearn(
         self,

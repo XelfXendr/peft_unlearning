@@ -15,8 +15,8 @@ import torch.utils
 from safetensors.torch import save_model
 
 from models import UnlearningModel
-from unlearn_datasets import prepare_data, prepare_loader
-from download_model import download_model, download_datasets, download_model_1B
+from unlearn_loading import prepare_data, prepare_loader
+from unlearn_loading import download_model, download_datasets, download_model_1B
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -143,8 +143,7 @@ def unlearn(
     print(tokenizer.batch_decode(test_sample["input_ids"]))
     print(tokenizer.batch_decode(test_output))
     """
-    return unlearn_model.get_model()
-
+    return unlearn_model.extract_model()
 
 if __name__ == "__main__":
     args = parser.parse_args([] if "__file__" not in globals() else None)

@@ -22,7 +22,7 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import roc_curve, auc
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig
 
-from download_model import download_model_1B
+from unlearn_loading import download_model_1B
 
 
 def default_args() -> argparse.Namespace:

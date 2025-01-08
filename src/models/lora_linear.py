@@ -5,9 +5,9 @@ class LoRALinear(torch.nn.Module):
     def __init__(self, original: torch.nn.Linear, rank: int):
         super().__init__()
 
-        self.original = original
-        self.A = torch.nn.Linear(original.in_features, rank, bias=False)
-        self.B = torch.nn.Linear(rank, original.out_features, bias=False)
+        self.original: torch.nn.Linear = original
+        self.A: torch.nn.Linear = torch.nn.Linear(original.in_features, rank, bias=False)
+        self.B: torch.nn.Linear = torch.nn.Linear(rank, original.out_features, bias=False)
 
         self._only_backbone = False
 

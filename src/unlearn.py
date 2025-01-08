@@ -103,7 +103,9 @@ def main(args: argparse.Namespace):
     if args.save_model:
         print("Saving model.")
         os.makedirs(args.logdir, exist_ok=True)
-        save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
+        unlearned_model.save_pretrained(os.path.join(args.logdir, "model"))
+        tokenizer.save_pretrained(os.path.join(args.logdir, "model"))
+        #save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
 
 
 def unlearn(

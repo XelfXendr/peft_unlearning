@@ -56,6 +56,6 @@ class LoRAModel(torch.nn.Module):
                 parent_name, attr_name = name.rsplit(".", 1)
                 parent_module = self._llm.get_submodule(parent_name)
 
-                setattr(parent_module, attr_name, module._linear)
+                setattr(parent_module, attr_name, module.original)
 
         return self._llm

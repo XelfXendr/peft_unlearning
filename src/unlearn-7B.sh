@@ -14,17 +14,17 @@ trap 'clean_scratch' TERM EXIT
 
 # copy working directory into the scratchdir
 cp -r $DATADIR $SCRATCHDIR
-cd $SCRATCHDIR
+cd $SCRATCHDIR/llm_thesis
 
 # set up python environment
 module add python/python-3.10.4-intel-19.0.4-sc7snnf
 python3 -m venv venv
 venv/bin/pip install --no-cache-dir --upgrade pip setuptools
-venv/bin/pip install --no-cache-dir -r llm_thesis/requirements.txt
+venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # ... the computation ...
-cd llm_thesis/src
-$SCRATCHDIR/venv/bin/python unlearn.py \
+cd src
+$SCRATCHDIR/llm_thesis/venv/bin/python unlearn.py \
     --model=$MODEL \
     --logdir=$LOGDIR \
     --threads=4 \

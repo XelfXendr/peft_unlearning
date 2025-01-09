@@ -60,6 +60,9 @@ parser.add_argument(
 parser.add_argument(
     "--save_model", default=True, type=bool, help="Save model after training."
 )
+parser.add_argument(
+    "--save_logdir_name", default=False, type=bool, help="Save this run's logdir path to logdir.txt"
+)
 
 
 def main(args: argparse.Namespace):
@@ -87,6 +90,10 @@ def main(args: argparse.Namespace):
             ),
         ),
     )
+
+    #save logdir value
+    with open('logdir.txt', 'w') as f:
+        f.write(f'{args.logdir}')
 
     hf_token = "***REMOVED***"
     if args.model == "7B":

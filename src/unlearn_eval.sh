@@ -30,7 +30,7 @@ $SCRATCHDIR/llm_thesis/venv/bin/python unlearn.py \
     --threads=4 \
     --batch_size=4 \
     --epochs=$EP \
-    --evaluate_every=5 \
+    --evaluate_every=50000 \
     --beta=$BETA \
     --learning_rate=$LR \
     --npo_mult=$NPO \
@@ -44,7 +44,7 @@ $SCRATCHDIR/llm_thesis/venv/bin/python unlearn.py \
 RUNLOGDIR=$(<logdir.txt)
 
 # download MMLU eval framework
-git clone git@github.com:allenai/open-instruct.git
+git clone https://github.com/allenai/open-instruct.git
 cd open-instruct
 
 # install requirements
@@ -59,16 +59,16 @@ $SCRATCHDIR/llm_thesis/venv/bin/python -m pip install -U transformers
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 scripts/data/prepare_eval_data.sh
 
-$SCRATCHDIR/llm_thesis/venv/bin/python3 eval/eval/mmlu/run_eval.py \
+$SCRATCHDIR/llm_thesis/venv/bin/python3 eval/mmlu/run_eval.py \
     --model_name_or_path=$RUNLOGDIR/model \
     --tokenizer_name_or_path=$RUNLOGDIR/model \
-    --save_dir=RUNLOGDIR \
-    --data_dir=$SCRATCHDIR/llm_thesis/open-instruct/data/eval/mmlu
+    --save_dir=$RUNLOGDIR \
+    --data_dir=$SCRATCHDIR/llm_thesis/src/open-instruct/data/eval/mmlu
 
 cd ..
 $SCRATCHDIR/llm_thesis/venv/bin/python3 scripts/semeval_evaluation.py \
     --checkpoint_path=$RUNLOGDIR/model \
     --mmlu_metrics_file_path=$RUNLOGDIR/metrics.json \
-    --data_path=semeval25-unlearning-data/data \
-    --mia_data_path=semeval25-unlearning-data/mia_data \
+    --data_path=semeval25-unlearning-data/data/ \
+    --mia_data_path=semeval25-unlearning-data/mia_data/ \
     --output_dir=$RUNLOGDIR

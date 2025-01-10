@@ -47,8 +47,8 @@ def get_args_and_verify():
 
     # Verify data files exist
     assert(os.path.exists(args.data_path))
-    assert(os.path.exists(os.path.join(args.data_path, 'forget.jsonl')))
-    assert(os.path.exists(os.path.join(args.data_path, 'retain.jsonl')))
+    assert(os.path.exists(os.path.join(args.data_path, 'forget_train-00000-of-00001.parquet')))
+    assert(os.path.exists(os.path.join(args.data_path, 'retain_train-00000-of-00001.parquet')))
 
     # If specified, verify data files exist
     if args.mia_data_path is not None:

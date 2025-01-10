@@ -40,7 +40,6 @@ class UnlearningModel(torch.nn.Module):
     def unlearn(
         self,
         train_data: DataLoader,
-        validation_data: DataLoader,
         args: argparse.Namespace,
     ):
         train_steps = 0

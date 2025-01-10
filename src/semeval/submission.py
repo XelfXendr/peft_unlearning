@@ -97,8 +97,6 @@ class LoRAModel(torch.nn.Module):
         return self._llm
 
 
-
-
 class UnlearningModel(torch.nn.Module):
     def __init__(
         self,
@@ -126,12 +124,7 @@ class UnlearningModel(torch.nn.Module):
     def extract_model(self) -> AutoModelForCausalLM:
         return self._llm.extract_model()
 
-    def unlearn(
-        self,
-        train_data: DataLoader,
-        args: argparse.Namespace,
-        save_path: str
-    ):
+    def unlearn(self, train_data: DataLoader, args: argparse.Namespace, save_path: str):
         train_steps = 0
         for epoch in range(args.epochs):
             self.train()
@@ -251,7 +244,6 @@ class UnlearningModel(torch.nn.Module):
         return self._llm(x, **xs)
 
 
-
 # prepares the dataset for training/validation by tokenizing the strings
 # and taking note of the range of tokens that contains the output
 def prepare_data(
@@ -317,6 +309,7 @@ def prepare_loader(
         data, batch_size=args.batch_size, collate_fn=prepare_batch, shuffle=shuffle
     )
 
+
 def prepare_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -332,7 +325,9 @@ def prepare_args() -> argparse.Namespace:
 
     parser.add_argument("--batch_size", default=4, type=int, help="Batch size.")
     parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
-    parser.add_argument("--learning_rate", default=1e-4, type=float, help="Learning rate.")
+    parser.add_argument(
+        "--learning_rate", default=1e-4, type=float, help="Learning rate."
+    )
 
     parser.add_argument("--beta", default=0.5, type=float, help="Beta for NPO loss.")
 
@@ -343,7 +338,10 @@ def prepare_args() -> argparse.Namespace:
         "--rt_mult", default=1.0, type=float, help="Retain loss multiplier."
     )
     parser.add_argument(
-        "--kl_mult", default=0.5, type=float, help="Retain KL divergence loss multiplier."
+        "--kl_mult",
+        default=0.5,
+        type=float,
+        help="Retain KL divergence loss multiplier.",
     )
 
     parser.add_argument("--lora_rank", default=5, type=int, help="Rank of the LoRAs.")
@@ -361,9 +359,13 @@ def prepare_args() -> argparse.Namespace:
         "--save_model", default=True, type=bool, help="Save model after training."
     )
     parser.add_argument(
-        "--save_logdir_name", default=False, type=bool, help="Save this run's logdir path to logdir.txt"
+        "--save_logdir_name",
+        default=False,
+        type=bool,
+        help="Save this run's logdir path to logdir.txt",
     )
     return parser.parse_args([])
+
 
 def unlearn(
     input_path_to_unlearning_candidate_model,
@@ -372,15 +374,17 @@ def unlearn(
     output_path_to_write_unlearned_model,
 ):
     args = prepare_args()
-    model = AutoModelForCausalLM.from_pretrained(input_path_to_unlearning_candidate_model)
+    model = AutoModelForCausalLM.from_pretrained(
+        input_path_to_unlearning_candidate_model
+    )
     tokenizer = AutoTokenizer.from_pretrained(input_path_to_unlearning_candidate_model)
 
     retain_train = pd.read_parquet(
-        [p.path for p in os.scandir(retain_set_path) if '.parquet' in p.path][0],
+        [p.path for p in os.scandir(retain_set_path) if ".parquet" in p.path][0],
         engine="pyarrow",
     )
     forget_train = pd.read_parquet(
-        [p.path for p in os.scandir(forget_set_path) if '.parquet' in p.path][0],
+        [p.path for p in os.scandir(forget_set_path) if ".parquet" in p.path][0],
         engine="pyarrow",
     )
 
@@ -412,9 +416,15 @@ def unlearn(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--load_dir", type=str, help="Model dir.", required=True)
-    parser.add_argument("--retain_dir", type=str, help="Retain dataset directory.", required=True)
-    parser.add_argument("--forget_dir", type=str, help="Forger dataset directory.", required=True)
-    parser.add_argument("--output_dir", type=str, help="Output model dir.", required=True)
+    parser.add_argument(
+        "--retain_dir", type=str, help="Retain dataset directory.", required=True
+    )
+    parser.add_argument(
+        "--forget_dir", type=str, help="Forger dataset directory.", required=True
+    )
+    parser.add_argument(
+        "--output_dir", type=str, help="Output model dir.", required=True
+    )
 
     args = parser.parse_args([] if "__file__" not in globals() else None)
     unlearn(args)

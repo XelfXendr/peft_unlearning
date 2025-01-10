@@ -12,8 +12,6 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
 import torch.utils
 
-from safetensors.torch import save_model
-
 from models import UnlearningModel
 from unlearn_loading import prepare_data, prepare_loader
 from unlearn_loading import download_model, download_datasets, download_model_1B
@@ -30,11 +28,11 @@ parser.add_argument(
 parser.add_argument("--seed", default=42, type=int, help="Random seed.")
 parser.add_argument("--device", default=None, type=str, help="Device to use.")
 
-parser.add_argument("--batch_size", default=32, type=int, help="Batch size.")
-parser.add_argument("--epochs", default=10, type=int, help="Number of epochs.")
+parser.add_argument("--batch_size", default=4, type=int, help="Batch size.")
+parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
 parser.add_argument("--learning_rate", default=1e-4, type=float, help="Learning rate.")
 
-parser.add_argument("--beta", default=0.1, type=float, help="Beta for NPO loss.")
+parser.add_argument("--beta", default=0.5, type=float, help="Beta for NPO loss.")
 
 parser.add_argument(
     "--npo_mult", default=1.0, type=float, help="Forget loss multiplier."
@@ -43,10 +41,10 @@ parser.add_argument(
     "--rt_mult", default=1.0, type=float, help="Retain loss multiplier."
 )
 parser.add_argument(
-    "--kl_mult", default=0.0, type=float, help="Retain KL divergence loss multiplier."
+    "--kl_mult", default=0.5, type=float, help="Retain KL divergence loss multiplier."
 )
 
-parser.add_argument("--lora_rank", default=2, type=int, help="Rank of the LoRAs.")
+parser.add_argument("--lora_rank", default=5, type=int, help="Rank of the LoRAs.")
 parser.add_argument(
     "--lora_merge_every",
     default=-1,
@@ -55,7 +53,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--evaluate_every", default=2, type=int, help="Evaluate every n epochs."
+    "--evaluate_every", default=5, type=int, help="Evaluate every n epochs."
 )
 parser.add_argument(
     "--save_model", default=True, type=bool, help="Save model after training."
@@ -119,17 +117,12 @@ def unlearn(
     model: AutoModelForCausalLM,
     tokenizer: AutoTokenizer,
     retain_train: pd.DataFrame,
-    retain_val: pd.DataFrame,
     forget_train: pd.DataFrame,
-    forget_val: pd.DataFrame,
     args: argparse.Namespace,
 ) -> AutoModelForCausalLM:
     print("Encoding datasets.")
     tokenized_train = prepare_data(tokenizer, retain_train, forget_train, args)
-    tokenized_val = prepare_data(tokenizer, retain_val, forget_val, args)
-
     train_loader = prepare_loader(tokenized_train, tokenizer, args, shuffle=True)
-    val_loader = prepare_loader(tokenized_val, tokenizer, args, shuffle=False)
 
     print("Preparing model.")
     unlearn_model = UnlearningModel(
@@ -141,7 +134,6 @@ def unlearn(
     print("Unlearning.")
     unlearn_model.unlearn(
         train_data=train_loader,
-        validation_data=val_loader,
         args=args,
     )
 

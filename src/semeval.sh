@@ -1,6 +1,6 @@
 #!/bin/bash
 #PBS -l select=1:ncpus=4:ngpus=1:mem=16gb:gpu_mem=32gb:scratch_local=64gb
-#PBS -l walltime=24:00:00
+#PBS -l walltime=8:00:00
 #PBS -N unlearn_submission
 
 # storage is shared via NFSv4

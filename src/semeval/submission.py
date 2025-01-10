@@ -338,7 +338,7 @@ def unlearn(
         parser.add_argument("--device", default=None, type=str, help="Device to use.")
 
         parser.add_argument("--batch_size", default=16, type=int, help="Batch size.")
-        parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
+        parser.add_argument("--epochs", default=0, type=int, help="Number of epochs.")
         parser.add_argument(
             "--learning_rate", default=1e-4, type=float, help="Learning rate."
         )
@@ -438,4 +438,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args([] if "__file__" not in globals() else None)
-    unlearn(args)
+    unlearn(args.load_dir, args.output_dir, args.retain_dir, args.forget_dir)

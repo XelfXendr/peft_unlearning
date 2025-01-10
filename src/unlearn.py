@@ -102,7 +102,7 @@ def main(args: argparse.Namespace):
     retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
 
     unlearned_model = unlearn(
-        model, tokenizer, retain_train, retain_val, forget_train, forget_val, args
+        model, tokenizer, retain_train, forget_train, args
     )
 
     if args.save_model:

@@ -66,8 +66,8 @@ def get_args_and_verify():
     return args
 
 def inference(args, model, tokenizer):
-    forget_file = args.data_path + 'forget_train-00000-of-00001.parquet'
-    retain_file = args.data_path + 'retain_train-00000-of-00001.parquet'
+    forget_file = args.data_path + 'forget_validation-00000-of-00001.parquet'
+    retain_file = args.data_path + 'retain_validation-00000-of-00001.parquet'
 
     accelerator = Accelerator()
     model.to(accelerator.device)

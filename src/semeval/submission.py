@@ -16,6 +16,7 @@ def unlearn(
     forget_set_path,
     retain_set_path,
 ):
+    # A LoRA adapted linear layer
     class LoRALinear(torch.nn.Module):
         def __init__(self, original: torch.nn.Linear, rank: int):
             super().__init__()
@@ -44,6 +45,7 @@ def unlearn(
             torch.nn.init.xavier_normal_(self.A.weight)
             torch.nn.init.zeros_(self.B.weight)
 
+    # A LoRA adapted LLM
     class LoRAModel(torch.nn.Module):
         def __init__(
             self,
@@ -101,6 +103,7 @@ def unlearn(
 
             return self._llm
 
+    # unlearning wrapper for an LLM
     class UnlearningModel(torch.nn.Module):
         def __init__(
             self,
@@ -173,9 +176,11 @@ def unlearn(
                         {"loss": total_loss / (forget_count + retain_count)}
                     )
 
-                if epoch % 5 == 0:
+                if (epoch+1) % 5 == 0:
+                    print("Saving checkpoint")
                     model_copy = copy.deepcopy(self._llm)
                     model_copy.extract_model().save_pretrained(save_path)
+                    del model_copy
             pass
 
         def train_step(self, inputs, answer_mask, tasks):
@@ -337,7 +342,7 @@ def unlearn(
         parser.add_argument("--seed", default=42, type=int, help="Random seed.")
         parser.add_argument("--device", default=None, type=str, help="Device to use.")
 
-        parser.add_argument("--batch_size", default=16, type=int, help="Batch size.")
+        parser.add_argument("--batch_size", default=8, type=int, help="Batch size.")
         parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
         parser.add_argument(
             "--learning_rate", default=1e-4, type=float, help="Learning rate."

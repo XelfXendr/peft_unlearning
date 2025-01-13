@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l select=1:ncpus=4:ngpus=1:mem=16gb:gpu_mem=32gb:scratch_local=64gb
+#PBS -l select=1:ncpus=4:ngpus=1:mem=32gb:gpu_mem=64gb:scratch_local=64gb
 #PBS -l walltime=8:00:00
 #PBS -N unlearn_submission
 

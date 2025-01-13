@@ -16,6 +16,9 @@ trap 'clean_scratch' TERM EXIT
 cp -r $DATADIR $SCRATCHDIR
 cd $SCRATCHDIR/llm_thesis
 
+echo "Starting"
+echo $RUNLOGDIR
+
 # set up python environment
 module add python/python-3.10.4-intel-19.0.4-sc7snnf
 python3 -m venv venv
@@ -37,6 +40,7 @@ $SCRATCHDIR/llm_thesis/venv/bin/python -m pip install -r requirements.txt
 $SCRATCHDIR/llm_thesis/venv/bin/python -m nltk.downloader punkt
 $SCRATCHDIR/llm_thesis/venv/bin/python -m pip install -U transformers
 
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 scripts/data/prepare_eval_data.sh
 
 $SCRATCHDIR/llm_thesis/venv/bin/python3 eval/mmlu/run_eval.py \

@@ -337,7 +337,7 @@ def unlearn(
         parser.add_argument("--seed", default=42, type=int, help="Random seed.")
         parser.add_argument("--device", default=None, type=str, help="Device to use.")
 
-        parser.add_argument("--batch_size", default=16, type=int, help="Batch size.")
+        parser.add_argument("--batch_size", default=4, type=int, help="Batch size.")
         parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
         parser.add_argument(
             "--learning_rate", default=1e-4, type=float, help="Learning rate."

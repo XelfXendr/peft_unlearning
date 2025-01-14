@@ -190,7 +190,7 @@ def unlearn(
                         {"loss": total_loss / (forget_count + retain_count)}
                     )
 
-                if (((epoch + 1) % 2) == 0) or (time.time() - start_time >= 50*60):
+                if (((epoch + 1) % 3) == 0) or (time.time() - start_time >= 50*60):
                     print("Saving checkpoint")
                     extracted_model = self._llm.extract_model()
                     save_checkpoint(extracted_model, tokenizer, save_path)
@@ -380,7 +380,7 @@ def unlearn(
         )
 
         parser.add_argument(
-            "--lora_rank", default=5, type=int, help="Rank of the LoRAs."
+            "--lora_rank", default=2, type=int, help="Rank of the LoRAs."
         )
         parser.add_argument(
             "--lora_merge_every",

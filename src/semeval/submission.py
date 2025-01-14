@@ -4,11 +4,12 @@ from torch.utils.data import DataLoader
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from tqdm.auto import tqdm
 import os
+import shutil
 import argparse
 import pandas as pd
 import numpy as np
 import copy
-
+import time
 
 def unlearn(
     input_path_to_unlearning_candidate_model,
@@ -92,6 +93,7 @@ def unlearn(
         # and returns the converted model
         def extract_model(self) -> AutoModelForCausalLM:
             self.merge_loras()
+            self._recovery = []
 
             modules = list(self._llm.named_modules())
             for name, module in modules:
@@ -99,9 +101,16 @@ def unlearn(
                     parent_name, attr_name = name.rsplit(".", 1)
                     parent_module = self._llm.get_submodule(parent_name)
 
+                    self._recovery.append((parent_module, attr_name, copy.deepcopy(module)))
+
                     setattr(parent_module, attr_name, module.original)
 
             return self._llm
+        
+        def recover_loras(self):
+            for parent_module, attr_name, module in self._recovery:
+                setattr(parent_module, attr_name, module)
+            
 
     # unlearning wrapper for an LLM
     class UnlearningModel(torch.nn.Module):
@@ -132,12 +141,17 @@ def unlearn(
             return self._llm.extract_model()
 
         def unlearn(
-            self, train_data: DataLoader, args: argparse.Namespace, save_path: str
+            self,
+            tokenizer: AutoTokenizer,
+            train_data: DataLoader,
+            args: argparse.Namespace,
+            save_path: str,
+            start_time: float,
         ):
             train_steps = 0
             for epoch in range(args.epochs):
                 self.train()
-                epoch_message = f"Epoch={epoch+1}/{args.epochs}"
+                epoch_message = f"Epoch={epoch + 1}/{args.epochs}"
                 data_and_progress = tqdm(
                     train_data, epoch_message, unit="batch", leave=False
                 )
@@ -176,11 +190,11 @@ def unlearn(
                         {"loss": total_loss / (forget_count + retain_count)}
                     )
 
-                if (epoch+1) % 5 == 0:
+                if (((epoch + 1) % 2) == 0) or (time.time() - start_time >= 50*60):
                     print("Saving checkpoint")
-                    model_copy = copy.deepcopy(self._llm)
-                    model_copy.extract_model().save_pretrained(save_path)
-                    del model_copy
+                    extracted_model = self._llm.extract_model()
+                    save_checkpoint(extracted_model, tokenizer, save_path)
+                    self._llm.recover_loras()
             pass
 
         def train_step(self, inputs, answer_mask, tasks):
@@ -389,6 +403,20 @@ def unlearn(
         )
         return parser.parse_args([])
 
+    def save_checkpoint(
+        model: AutoModelForCausalLM, tokenizer: AutoTokenizer, path: str
+    ):
+        # prepare tmp directory
+        temporary_path = os.path.join(path, 'tmp')
+        os.makedirs(temporary_path, exist_ok=True)
+        # first save to a temporary directory to not break a checkpoint mid-save
+        model.save_pretrained(temporary_path)
+        tokenizer.save_pretrained(temporary_path)
+        # finally move saved model from tmp to the actual directory
+        for f in os.listdir(temporary_path):
+            shutil.move(os.path.join(temporary_path, f), os.path.join(path, f))
+        
+    start_time = time.time()
     args = prepare_args()
     model = AutoModelForCausalLM.from_pretrained(
         input_path_to_unlearning_candidate_model
@@ -416,16 +444,20 @@ def unlearn(
 
     print("Unlearning.")
     unlearn_model.unlearn(
+        tokenizer=tokenizer,
         train_data=train_loader,
         args=args,
         save_path=output_path_to_write_unlearned_model,
+        start_time=start_time
     )
 
     print("Saving")
     extracted_model: AutoModelForCausalLM = unlearn_model.extract_model()
-    extracted_model.save_pretrained(output_path_to_write_unlearned_model)
-    tokenizer.save_pretrained(output_path_to_write_unlearned_model)
-
+    save_checkpoint(
+        model=extracted_model,
+        tokenizer=tokenizer,
+        path=output_path_to_write_unlearned_model,
+    )
     pass
 
 

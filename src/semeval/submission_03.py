@@ -480,4 +480,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args([] if "__file__" not in globals() else None)
-    unlearn(args.load_dir, args.output_dir, args.retain_dir, args.forget_dir)
+    unlearn(args.load_dir, args.output_dir, args.forget_dir, args.retain_dir)

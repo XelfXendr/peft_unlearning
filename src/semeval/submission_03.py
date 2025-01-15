@@ -92,17 +92,22 @@ def unlearn(
         # converts all LoRA layers back to Linear layers
         # and returns the converted model
         def extract_model(self) -> AutoModelForCausalLM:
-            self.merge_loras()
+            
             self._recovery = []
-
             modules = list(self._llm.named_modules())
+            
             for name, module in modules:
                 if isinstance(module, LoRALinear):
                     parent_name, attr_name = name.rsplit(".", 1)
                     parent_module = self._llm.get_submodule(parent_name)
-
                     self._recovery.append((parent_module, attr_name, copy.deepcopy(module)))
 
+            self.merge_loras()            
+
+            for name, module in modules:
+                if isinstance(module, LoRALinear):
+                    parent_name, attr_name = name.rsplit(".", 1)
+                    parent_module = self._llm.get_submodule(parent_name)
                     setattr(parent_module, attr_name, module.original)
 
             return self._llm
@@ -374,13 +379,13 @@ def unlearn(
         )
         parser.add_argument(
             "--kl_mult",
-            default=0.5,
+            default=0.0,
             type=float,
             help="Retain KL divergence loss multiplier.",
         )
 
         parser.add_argument(
-            "--lora_rank", default=5, type=int, help="Rank of the LoRAs."
+            "--lora_rank", default=2, type=int, help="Rank of the LoRAs."
         )
         parser.add_argument(
             "--lora_merge_every",

@@ -197,9 +197,8 @@ def unlearn(
 
                 if (((epoch + 1) % 3) == 0) or (time.time() - start_time >= 50*60):
                     print("Saving checkpoint")
-                    extracted_model = self._llm.extract_model()
+                    extracted_model = copy.deepcopy(self._llm).extract_model()
                     save_checkpoint(extracted_model, tokenizer, save_path)
-                    self._llm.recover_loras()
             pass
 
         def train_step(self, inputs, answer_mask, tasks):

@@ -55,7 +55,7 @@ $SCRATCHDIR/llm_thesis/venv/bin/python3 eval/mmlu/run_eval.py \
 cd ..
 $SCRATCHDIR/llm_thesis/venv/bin/python3 scripts/semeval_evaluation.py \
     --checkpoint_path=/storage/brno2/home/bronecja/result_model \
-    --mmlu_metrics_file_path=/storage/brno2/home/bronecja/result_model \
+    --mmlu_metrics_file_path=/storage/brno2/home/bronecja/result_model/metrics.json \
     --data_path=semeval25-unlearning-data/data/ \
     --mia_data_path=semeval25-unlearning-data/mia_data/ \
     --output_dir=/storage/brno2/home/bronecja/result_model

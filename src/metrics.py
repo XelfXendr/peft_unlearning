@@ -302,15 +302,3 @@ def evaluate(
     results = compute_metrics(args)
 
     return results
-
-
-def main():
-    hf_token = "***REMOVED***"
-    model, tokenizer = download_model_1B(hf_token)
-
-    results = evaluate(model, tokenizer)
-    print(results)
-
-
-if __name__ == "__main__":
-    main()

@@ -9,7 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
 
 def main(args: argparse.Namespace):
-    hf_token = "***REMOVED***"   # Copy token here
+    hf_token = ""   # Copy token here
     
     snapshot_download(repo_id='llmunlearningsemeval2025organization/olmo-finetuned-semeval25-unlearning', token=hf_token, local_dir='semeval25-unlearning-model')
     model = AutoModelForCausalLM.from_pretrained('semeval25-unlearning-model')

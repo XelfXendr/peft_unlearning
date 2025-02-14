@@ -4,10 +4,7 @@ import pandas as pd
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import os
-<<<<<<< HEAD
 import argparse
-=======
->>>>>>> cde6c1c71c6260a881a3f1c45ceeba08fb572a24
 
 
 def download_model(hf_token: str) -> tuple[AutoModelForCausalLM, AutoTokenizer]:

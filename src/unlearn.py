@@ -21,6 +21,7 @@ parser.add_argument(
     "--model", default="1B", type=str, choices=["1B", "7B"], help="Model to use."
 )
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
+parser.add_argument("--hf_token", required=True, type=str, help="Semeval task hugging face token.")
 
 parser.add_argument(
     "--threads", default=1, type=int, help="Maximum number of threads to use."
@@ -93,7 +94,7 @@ def main(args: argparse.Namespace):
     with open('logdir.txt', 'w') as f:
         f.write(f'{args.logdir}')
 
-    hf_token = "***REMOVED***"
+    hf_token = args.hf_token
     if args.model == "7B":
         model, tokenizer = download_model(hf_token)
     else:

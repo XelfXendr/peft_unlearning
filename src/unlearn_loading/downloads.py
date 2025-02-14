@@ -4,6 +4,10 @@ import pandas as pd
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import os
+<<<<<<< HEAD
+import argparse
+=======
+>>>>>>> cde6c1c71c6260a881a3f1c45ceeba08fb572a24
 
 
 def download_model(hf_token: str) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
@@ -65,12 +69,15 @@ def download_datasets(
     return retain_train_df, retain_validation_df, forget_train_df, forget_validation_df
 
 
-def main():
-    hf_token = "***REMOVED***"
+def main(args):
+    hf_token = args.hf_token
     download_model(hf_token)
     download_model_1B(hf_token)
     download_datasets(hf_token)
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hf_token", required=True, type=str, help="Semeval task hugging face token.")
+    args = parser.parse_args([] if "__file__" not in globals() else None)
     main()

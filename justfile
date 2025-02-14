@@ -24,5 +24,5 @@ run *file_and_args:
 run *file_and_args:
 	cd {{invocation_directory()}}; {{justfile_directory()}}\venv\Scripts\python {{file_and_args}}
 
-metacentrum-port:
-	ssh -L 8308:127.0.0.1:8308 -t ***REMOVED***
+metacentrum-port address:
+	ssh -L 8308:127.0.0.1:8308 -t address

@@ -42,7 +42,7 @@ $UV run unlearn.py \
     --kl_mult=$KL \
     --lora_rank=$RANK \
     --lora_merge_every=-1 \
-    --save_every=5 \
+    --save_every=$SAVE \
     --save_model=True \
     --save_logdir_name=True \
     --seed=$SEED

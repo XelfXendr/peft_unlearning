@@ -21,7 +21,9 @@ parser.add_argument(
     "--model", default="1B", type=str, choices=["1B", "7B"], help="Model to use."
 )
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
-parser.add_argument("--hf_token", required=True, type=str, help="Semeval task hugging face token.")
+parser.add_argument(
+    "--hf_token", required=True, type=str, help="Semeval task hugging face token."
+)
 
 parser.add_argument(
     "--threads", default=1, type=int, help="Maximum number of threads to use."
@@ -45,6 +47,13 @@ parser.add_argument(
     "--kl_mult", default=0.5, type=float, help="Retain KL divergence loss multiplier."
 )
 
+parser.add_argument(
+    "--peft_method",
+    default="lora",
+    choices=["lora"],
+    help="PEFT method to use for unlearning. None finetunes the entire model.",
+)
+
 parser.add_argument("--lora_rank", default=5, type=int, help="Rank of the LoRAs.")
 parser.add_argument(
     "--lora_merge_every",
@@ -57,10 +66,16 @@ parser.add_argument(
     "--evaluate_every", default=5, type=int, help="Evaluate every n epochs."
 )
 parser.add_argument(
+    "--save_every", default=-1, type=int, help="Save checkpoint every n epochs"
+)
+parser.add_argument(
     "--save_model", default=True, type=bool, help="Save model after training."
 )
 parser.add_argument(
-    "--save_logdir_name", default=False, type=bool, help="Save this run's logdir path to logdir.txt"
+    "--save_logdir_name",
+    default=False,
+    type=bool,
+    help="Save this run's logdir path to logdir.txt",
 )
 
 
@@ -90,9 +105,9 @@ def main(args: argparse.Namespace):
         ),
     )
 
-    #save logdir value
-    with open('logdir.txt', 'w') as f:
-        f.write(f'{args.logdir}')
+    # save logdir value
+    with open("logdir.txt", "w") as f:
+        f.write(f"{args.logdir}")
 
     hf_token = args.hf_token
     if args.model == "7B":
@@ -102,16 +117,14 @@ def main(args: argparse.Namespace):
 
     retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
 
-    unlearned_model = unlearn(
-        model, tokenizer, retain_train, forget_train, args
-    )
+    unlearned_model = unlearn(model, tokenizer, retain_train, forget_train, args)
 
     if args.save_model:
         print("Saving model.")
         os.makedirs(args.logdir, exist_ok=True)
         unlearned_model.save_pretrained(os.path.join(args.logdir, "model"))
         tokenizer.save_pretrained(os.path.join(args.logdir, "model"))
-        #save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
+        # save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
 
 
 def unlearn(
@@ -146,6 +159,7 @@ def unlearn(
     print(tokenizer.batch_decode(test_output))
     """
     return unlearn_model.extract_model()
+
 
 if __name__ == "__main__":
     args = parser.parse_args([] if "__file__" not in globals() else None)

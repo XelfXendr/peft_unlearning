@@ -9,7 +9,7 @@ DATADIR="$HOMEDIR/peft_unlearning"
 LOGDIR="$HOMEDIR/peft_unlearning_logs"
 
 MMLUDATA="$HOMEDIR/open-instruct/data/eval/mmlu"
-SEMEVALDATA="$HOMEDIR/peft_unlearning/src/semeval-unlearning-data"
+SEMEVALDATA="$HOMEDIR/peft_unlearning/src/semeval25-unlearning-data"
 
 UV="$HOMEDIR/.local/bin/uv"
 

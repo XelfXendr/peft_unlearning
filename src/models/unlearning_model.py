@@ -8,6 +8,7 @@ import metrics
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import os
+import copy
 
 
 class UnlearningModel(torch.nn.Module):
@@ -26,6 +27,7 @@ class UnlearningModel(torch.nn.Module):
             else "cpu"
         )
         self._args: argparse.Namespace = args
+
         self._llm: LoRAModel = LoRAModel(model, args.lora_rank)
         self._tokenizer = tokenizer
 
@@ -45,7 +47,7 @@ class UnlearningModel(torch.nn.Module):
         train_steps = 0
         for epoch in range(args.epochs):
             self.train()
-            epoch_message = f"Epoch={epoch+1}/{args.epochs}"
+            epoch_message = f"Epoch={epoch + 1}/{args.epochs}"
             data_and_progress = tqdm(
                 train_data, epoch_message, unit="batch", leave=False
             )
@@ -95,8 +97,12 @@ class UnlearningModel(torch.nn.Module):
                 epoch + 1,
             )
 
-            if (epoch + 1) % args.evaluate_every == 0:
+            if (args.evaluate_every >= 1) and ((epoch + 1) % args.evaluate_every == 0):
                 self.eval(epoch + 1)
+
+            if (args.save_every >= 1) and (((epoch + 1) % args.save_every) == 0):
+                print("Saving checkpoint")
+                self.save_checkpoint(os.path.join(args.logdir, f"checkpoint_{epoch}"))
         pass
 
     def train_step(self, inputs, answer_mask, tasks):
@@ -230,3 +236,8 @@ class UnlearningModel(torch.nn.Module):
             },
             step,
         )
+
+    def save_checkpoint(self, path: str):
+        extracted_model = copy.deepcopy(self._llm).extract_model()
+        extracted_model.save_pretrained(path)
+        self._tokenizer.save_pretrained(path)

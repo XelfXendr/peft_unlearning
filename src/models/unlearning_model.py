@@ -238,6 +238,8 @@ class UnlearningModel(torch.nn.Module):
         )
 
     def save_checkpoint(self, path: str):
+        self._llm.to("cpu")
         extracted_model = copy.deepcopy(self._llm).extract_model()
         extracted_model.save_pretrained(path)
         self._tokenizer.save_pretrained(path)
+        self._llm.to(self._device)

@@ -4,6 +4,8 @@ This repository contains the solution to the [SemEval-2025 Task 4 on Unlearning 
 
 The [semeval/submissions/](semeval/submissions/) directory contains the submitted solutions to the challenge. 
 
+![Results](jupyter/figs/7b_scores.jpg)
+
 # Setup
 
 Using [uv](https://docs.astral.sh/uv/) (recommended):

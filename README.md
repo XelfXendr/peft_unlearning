@@ -4,9 +4,10 @@ This repository contains the solution to the [SemEval-2025 Task 4 on Unlearning 
 
 The [semeval/submissions/](semeval/submissions/) directory contains the submitted solutions to the challenge. 
 
-![Results](jupyter/figs/7b_scores.jpg)
+## Experimental results
+![Experimental results](jupyter/figs/7b_scores.jpg)
 
-# Setup
+## Setup
 
 Using [uv](https://docs.astral.sh/uv/) (recommended):
 ```bash
@@ -15,7 +16,7 @@ uv sync
 
 The `requirements.txt` file is also present for pip setup.
 
-# Running the project
+## Running the project
 All available arguments may be listed using:
 ```bash
 uv run src/unlearn.py --help

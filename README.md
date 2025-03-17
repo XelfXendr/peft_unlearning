@@ -1,42 +1,49 @@
-# Jan Bronec's master's thesis repository
+# LLM Unlearning using Parameter-efficient Finetuning
 
----
+This repository contains the solution to the [SemEval-2025 Task 4 on Unlearning sensitive content from Large Language Models](https://llmunlearningsemeval2025.github.io)
 
-# Notes
+The [semeval/submissions/](semeval/submissions/) directory contains the submitted solutions to the challenge. 
 
-- lora merging while training doesn't work because I'm using the backbone for NPO loss computation (merging changes loss)
+# Setup
 
+Using [uv](https://docs.astral.sh/uv/) (recommended):
 ```bash
-git clone git@github.com:allenai/open-instruct.git
-
-cd open-instruct
-
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install --upgrade pip "setuptools<70.0.0" wheel 
-# TODO, unpin setuptools when this issue in flash attention is resolved
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install torch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 --index-url https://download.pytorch.org/whl/cu121
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install packaging
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install flash-attn==2.6.3 --no-build-isolation
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install -r requirements.txt
-$SCRATCHDIR/llm_thesis/venv/bin/python -m nltk.downloader punkt
-$SCRATCHDIR/llm_thesis/venv/bin/python -m pip install -U transformers
-
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-
-scripts/data/prepare_eval_data.sh
-
-
-cd open-instruct/eval/mmlu/
-$SCRATCHDIR/llm_thesis/venv/bin/python3 run_eval.py \
-    --model_name_or_path=$SCRATCHDIR/llm_thesis/src/model \
-    --tokenizer_name_or_path=$SCRATCHDIR/llm_thesis/src/model \
-    --save_dir=. \
-    --data_dir=$SCRATCHDIR/llm_thesis/open-instruct/data/eval/mmlu
-
-../../venv/bin/python3 evaluate_generations.py --debug --checkpoint_path=../model --mmlu_metrics_file_path=../metrics.json --data_path=data/ --output_dir=./ --mia_data_path=mia_data/
+uv sync
 ```
 
-forget_train-00000-of-00001.parquet
-forget_validation-00000-of-00001.parquet
-retain.jsonl
-retain_train-00000-of-00001.parquet
-retain_validation-00000-of-00001.parquet
+The `requirements.txt` file is also present for pip setup.
+
+# Running the project
+All available arguments may be listed using:
+```bash
+uv run src/unlearn.py --help
+```
+
+Important arguments:
+```bash
+  --hf_token HF_TOKEN   SemEval-2025 Task 4 hugging face token. (Required)
+  --model {1B,7B}       Model to use.
+  --logdir LOGDIR       Logdir.
+
+  --batch_size BATCH_SIZE
+                        Batch size.
+  --epochs EPOCHS       Number of unlearning epochs.
+  --learning_rate LEARNING_RATE
+                        Learning rate.
+
+  --beta BETA           Beta for NPO loss.
+  --npo_mult NPO_MULT   NPO forget loss multiplier.
+  --rt_mult RT_MULT     NLL retain loss multiplier.
+  --kl_mult KL_MULT     KL divergence retain loss multiplier.
+
+  --lora_rank LORA_RANK
+                        Rank of the LoRAs.
+                        Merge LoRAs every n batches (Experimental). `-1` means never.
+  
+  --evaluate_every EVALUATE_EVERY
+                        Evaluate every n epochs. `-1` means never.
+  --save_every SAVE_EVERY
+                        Save checkpoint every n epochs. `-1` means never.
+  --save_model, --no-save_model
+                        Save model after training.
+```

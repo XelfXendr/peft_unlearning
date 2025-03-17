@@ -17,34 +17,36 @@ from unlearn_loading import prepare_data, prepare_loader
 from unlearn_loading import download_model, download_datasets, download_model_1B
 
 parser = argparse.ArgumentParser()
+
+parser.add_argument(
+    "--hf_token", required=True, type=str, help="SemEval-2025 Task 4 hugging face token. (Required)"
+)
+
 parser.add_argument(
     "--model", default="1B", type=str, choices=["1B", "7B"], help="Model to use."
 )
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
-parser.add_argument(
-    "--hf_token", required=True, type=str, help="Semeval task hugging face token."
-)
 
 parser.add_argument(
-    "--threads", default=1, type=int, help="Maximum number of threads to use."
+    "--threads", default=4, type=int, help="Maximum number of threads to use."
 )
 parser.add_argument("--seed", default=42, type=int, help="Random seed.")
-parser.add_argument("--device", default=None, type=str, help="Device to use.")
+parser.add_argument("--device", default=None, type=str, help="Manually choose torch device.")
 
 parser.add_argument("--batch_size", default=4, type=int, help="Batch size.")
-parser.add_argument("--epochs", default=20, type=int, help="Number of epochs.")
+parser.add_argument("--epochs", default=20, type=int, help="Number of unlearning epochs.")
 parser.add_argument("--learning_rate", default=1e-4, type=float, help="Learning rate.")
 
 parser.add_argument("--beta", default=0.5, type=float, help="Beta for NPO loss.")
 
 parser.add_argument(
-    "--npo_mult", default=1.0, type=float, help="Forget loss multiplier."
+    "--npo_mult", default=1.0, type=float, help="NPO forget loss multiplier."
 )
 parser.add_argument(
-    "--rt_mult", default=1.0, type=float, help="Retain loss multiplier."
+    "--rt_mult", default=1.0, type=float, help="NLL retain loss multiplier."
 )
 parser.add_argument(
-    "--kl_mult", default=0.5, type=float, help="Retain KL divergence loss multiplier."
+    "--kl_mult", default=0.5, type=float, help="KL divergence retain loss multiplier."
 )
 
 parser.add_argument(
@@ -59,22 +61,22 @@ parser.add_argument(
     "--lora_merge_every",
     default=-1,
     type=int,
-    help="Merge LoRAs every n batches. `-1` means never.",
+    help="Merge LoRAs every n batches (Experimental). `-1` means never.",
 )
 
 parser.add_argument(
-    "--evaluate_every", default=5, type=int, help="Evaluate every n epochs."
+    "--evaluate_every", default=5, type=int, help="Evaluate every n epochs. `-1` means never."
 )
 parser.add_argument(
-    "--save_every", default=-1, type=int, help="Save checkpoint every n epochs"
+    "--save_every", default=-1, type=int, help="Save checkpoint every n epochs. `-1` means never."
 )
 parser.add_argument(
-    "--save_model", default=True, type=bool, help="Save model after training."
+    "--save_model", default=True, type=bool, help="Save model after training.", action=argparse.BooleanOptionalAction
 )
 parser.add_argument(
     "--save_logdir_name",
     default=False,
-    type=bool,
+    action='store_true',
     help="Save this run's logdir path to logdir.txt",
 )
 
@@ -124,7 +126,6 @@ def main(args: argparse.Namespace):
         os.makedirs(args.logdir, exist_ok=True)
         unlearned_model.save_pretrained(os.path.join(args.logdir, "model"))
         tokenizer.save_pretrained(os.path.join(args.logdir, "model"))
-        # save_model(unlearned_model, os.path.join(args.logdir, "model.safetensors"))
 
 
 def unlearn(
@@ -151,13 +152,6 @@ def unlearn(
         args=args,
     )
 
-    """
-    test_sample = train_loader.__iter__().__next__()[0]
-    test_output = unlearn_model.forward(test_sample)
-
-    print(tokenizer.batch_decode(test_sample["input_ids"]))
-    print(tokenizer.batch_decode(test_output))
-    """
     return unlearn_model.extract_model()
 
 

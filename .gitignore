@@ -26,3 +26,5 @@ output/
 *.tar.gz
 
 hf_token.txt
+
+logdir.txt

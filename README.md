@@ -30,15 +30,12 @@ Important arguments:
   --epochs EPOCHS       Number of unlearning epochs.
   --learning_rate LEARNING_RATE
                         Learning rate.
-
   --beta BETA           Beta for NPO loss.
   --npo_mult NPO_MULT   NPO forget loss multiplier.
   --rt_mult RT_MULT     NLL retain loss multiplier.
   --kl_mult KL_MULT     KL divergence retain loss multiplier.
-
   --lora_rank LORA_RANK
                         Rank of the LoRAs.
-                        Merge LoRAs every n batches (Experimental). `-1` means never.
   
   --evaluate_every EVALUATE_EVERY
                         Evaluate every n epochs. `-1` means never.

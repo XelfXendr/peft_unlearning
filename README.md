@@ -2,7 +2,10 @@
 
 This repository contains the solution to the [SemEval-2025 Task 4 on Unlearning sensitive content from Large Language Models](https://llmunlearningsemeval2025.github.io)
 
-The [semeval/submissions/](semeval/submissions/) directory contains the submitted solutions to the challenge. 
+### Directory structure:
+- [src/](src/): source code of our solution
+- [jobs/](jobs/): OpenPBS compatible scripts we used to run experiments
+- [semeval/submissions/](semeval/submissions/): the concrete scripts submitted to the challenge. 
 
 ## Experimental results
 ![Experimental results](jupyter/figs/7b_scores.jpg)

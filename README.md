@@ -20,7 +20,7 @@ uv sync
 The `requirements.txt` file is also present for pip setup.
 
 ## Running the project
-Warning: Evaluation scripts are not currently included in the repository, and the code will not work without them. We are currently rewriting them and releasing them under the MIT license.
+Warning: Evaluation scripts are not currently included in the repository, and the code will not work without them. We are currently rewriting them to release them under the MIT license.
 
 All available arguments may be listed using:
 ```bash

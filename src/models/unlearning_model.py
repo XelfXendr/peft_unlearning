@@ -170,7 +170,7 @@ class UnlearningModel(torch.nn.Module):
             "retain_loss": retain_loss.item(),
             "kl_retain_loss": kl_retain_loss.item(),
             "forget_count": tasks.sum().item(),
-            "retain_count": (~tasks).sum().item(),
+            "retain_count": (1 - tasks).sum().item(),
         }
 
     def forward(self, x, **xs):

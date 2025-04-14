@@ -46,14 +46,14 @@ $UV run unlearn.py \
     --lora_rank="$RANK" \
     --lora_merge_every=-1 \
     --save_every="$SAVE" \
-    --save_model=True \
-    --save_logdir_name=True \
+    --save_model \
+    --save_logdir_name \
     --seed="$SEED"
 
 RUNLOGDIR=$(<logdir.txt)
 
 echo "Evaluating MMLU"
-cd ..
+cd ../..
 # download MMLU eval framework
 git clone https://github.com/allenai/open-instruct.git
 cd open-instruct || exit

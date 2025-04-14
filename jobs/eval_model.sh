@@ -21,28 +21,34 @@ trap 'clean_scratch' TERM EXIT
 cd $SCRATCHDIR
 
 # download MMLU eval framework
-git clone https://github.com/allenai/open-instruct.git
-cd open-instruct
-git checkout 74897429b291acc2e579a888348c6f185cbdbec5
-$UV sync
-$UV sync --extra compile # to install flash attention
+if [ ! -f "$MODELPATH"/metrics.json ]; then
+    # download MMLU eval framework
+    git clone https://github.com/allenai/open-instruct.git
+    cd open-instruct
+    git checkout 74897429b291acc2e579a888348c6f185cbdbec5
+    $UV sync
+    $UV sync --extra compile # to install flash attention
 
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-$UV run eval/mmlu/run_eval.py \
-    --model_name_or_path=$MODELPATH \
-    --tokenizer_name_or_path=$MODELPATH \
-    --save_dir=$MODELPATH \
-    --data_dir=$MMLUDATA
+    export PYTHONPATH=$PYTHONPATH:$(pwd)
+    $UV run eval/mmlu/run_eval.py \
+        --model_name_or_path=$MODELPATH \
+        --tokenizer_name_or_path=$MODELPATH \
+        --save_dir=$MODELPATH \
+        --data_dir=$MMLUDATA
 
-cd ..
-git clone https://github.com/XelfXendr/peft_unlearning.git
-cd peft_unlearning
-$UV init --bare
-$UV add -r requirements.txt
+    cd ..
+fi
 
-$UV run semeval/eval/semeval_evaluation.py \
-    --checkpoint_path=$MODELPATH \
-    --mmlu_metrics_file_path=$MODELPATH/metrics.json \
-    --data_path=$SEMEVALDATA/data/ \
-    --mia_data_path=$SEMEVALDATA/mia_data/ \
-    --output_dir=$MODELPATH
+if [ ! -f "$MODELPATH"/evaluation_results.jsonl ]; then
+    git clone https://github.com/XelfXendr/peft_unlearning.git
+    cd peft_unlearning
+    $UV init --bare
+    $UV add -r requirements.txt
+
+    $UV run semeval/eval/semeval_evaluation.py \
+        --checkpoint_path=$MODELPATH \
+        --mmlu_metrics_file_path=$MODELPATH/metrics.json \
+        --data_path=$SEMEVALDATA/data/ \
+        --mia_data_path=$SEMEVALDATA/mia_data/ \
+        --output_dir=$MODELPATH
+fi

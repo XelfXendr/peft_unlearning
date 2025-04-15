@@ -49,6 +49,9 @@ cd peft_unlearning
 $UV init --bare
 $UV add -r requirements.txt
 
+mkdir semeval/eval/
+cp "$DATADIR/semeval/eval/semeval_evaluation.py" semeval/eval/
+
 for f in $(find "$RUNLOGDIR" -type f -name 'model-*' | grep -o "\(.*\)/" | sort -u)
 do
     if [ ! -f "$f"/evaluation_results.jsonl ]; then

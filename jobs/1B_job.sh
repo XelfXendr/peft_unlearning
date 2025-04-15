@@ -26,7 +26,7 @@ cd "$SCRATCHDIR"/peft_unlearning || exit
 
 # set up python environment
 $UV init --bare
-$UV add -r requirements.txt
+$UV add -r requirements.txt --cache-dir "$SCRATCHDIR/uv_cache"
 
 # ... the computation ...
 cd src || exit
@@ -58,8 +58,8 @@ cd ../..
 git clone https://github.com/allenai/open-instruct.git
 cd open-instruct || exit
 git checkout 74897429b291acc2e579a888348c6f185cbdbec5
-$UV sync
-$UV sync --extra compile # to install flash attention
+$UV sync --cache-dir "$SCRATCHDIR/uv_cache"
+$UV sync --extra compile --cache-dir "$SCRATCHDIR/uv_cache" # to install flash attention
 
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 

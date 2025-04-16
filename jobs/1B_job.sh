@@ -44,6 +44,7 @@ $UV run unlearn.py \
     --rt_mult="$RT" \
     --kl_mult="$KL" \
     --lora_rank="$RANK" \
+    --lora_alpha="$ALPHA" \
     --lora_merge_every=-1 \
     --save_every="$SAVE" \
     --save_model \

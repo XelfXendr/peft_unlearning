@@ -7,7 +7,8 @@ class LoRAModel(torch.nn.Module):
     def __init__(
         self,
         model: AutoModelForCausalLM,
-        rank: int = 2,
+        rank: int,
+        alpha: float,
         to_adapt: list[str] = ["q_proj", "v_proj"],
     ):
         super().__init__()
@@ -27,7 +28,7 @@ class LoRAModel(torch.nn.Module):
                 parent_name, attr_name = name.rsplit(".", 1)
                 parent_module = self._llm.get_submodule(parent_name)
 
-                lora = LoRALinear(module, rank)
+                lora = LoRALinear(module, rank, alpha)
                 self._loras.append(lora)
                 lora.A.weight.requires_grad = True
                 lora.B.weight.requires_grad = True

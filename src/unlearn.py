@@ -57,6 +57,7 @@ parser.add_argument(
 )
 
 parser.add_argument("--lora_rank", default=5, type=int, help="Rank of the LoRAs.")
+parser.add_argument("--lora_alpha", dafault=None, type=float, help="The LoRA alpha parameter. None means alpha=rank.")
 parser.add_argument(
     "--lora_merge_every",
     default=-1,
@@ -112,12 +113,13 @@ def main(args: argparse.Namespace):
         f.write(f"{args.logdir}")
 
     hf_token = args.hf_token
+
+    retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
+
     if args.model == "7B":
         model, tokenizer = download_model(hf_token)
     else:
         model, tokenizer = download_model_1B(hf_token)
-
-    retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
 
     unlearned_model = unlearn(model, tokenizer, retain_train, forget_train, args)
 

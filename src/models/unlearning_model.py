@@ -28,7 +28,9 @@ class UnlearningModel(torch.nn.Module):
         )
         self._args: argparse.Namespace = args
 
-        self._llm: LoRAModel = LoRAModel(model, args.lora_rank)
+        lora_alpha = float(args.lora_rank) if args.lora_alpha is None else args.lora_alpha
+
+        self._llm: LoRAModel = LoRAModel(model, args.lora_rank, lora_alpha)
         self._tokenizer = tokenizer
 
         self.logdir, self._writers = args.logdir, {}

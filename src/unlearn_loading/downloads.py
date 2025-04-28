@@ -8,13 +8,12 @@ import argparse
 
 
 def download_model(
-    hf_token: str, path="semeval25-unlearning-model"
+    path="semeval25-unlearning-model"
 ) -> tuple[AutoModelForCausalLM, AutoTokenizer]:
     if not os.path.isdir(path):
         os.makedirs(path, exist_ok=True)
         snapshot_download(
             repo_id="llmunlearningsemeval2025organization/olmo-finetuned-semeval25-unlearning",
-            token=hf_token,
             local_dir=path,
         )
     return AutoModelForCausalLM.from_pretrained(path), AutoTokenizer.from_pretrained(
@@ -23,13 +22,12 @@ def download_model(
 
 
 def download_model_1B(
-    hf_token: str, path="semeval25-unlearning-1B-model"
+    path="semeval25-unlearning-1B-model"
 ) -> AutoModelForCausalLM:
     if not os.path.isdir(path):
         os.makedirs(path, exist_ok=True)
         snapshot_download(
             repo_id="llmunlearningsemeval2025organization/olmo-1B-model-semeval25-unlearning",
-            token=hf_token,
             local_dir=path,
         )
 
@@ -39,16 +37,72 @@ def download_model_1B(
 
 
 def download_datasets(
-    hf_token: str, path="semeval25-unlearning-data"
+    path="semeval25-unlearning-data"
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     if not os.path.isdir(path):
         os.makedirs(path, exist_ok=True)
-        ## Fetch and load dataset:
-        snapshot_download(
-            repo_id="llmunlearningsemeval2025organization/semeval25-unlearning-dataset-public",
-            token=hf_token,
-            local_dir=path,
-            repo_type="dataset",
+        os.makedirs(path + "/data", exist_ok=True)
+
+        # load LUME ids consistent with the task setup
+
+        id_path = os.path.join(os.path.dirname(__file__), "sample_ids")
+
+        forget_train_ids = []
+        with open(os.path.join(id_path, "forget_train_ids.txt"), "r") as f:
+            for line in f:
+                line = line.strip()
+                if line == "":
+                    continue
+                forget_train_ids.append(line)
+        forget_val_ids = []
+        with open(os.path.join(id_path, "forget_val_ids.txt"), "r") as f:
+            for line in f:
+                line = line.strip()
+                if line == "":
+                    continue
+                forget_val_ids.append(line)
+        retain_train_ids = []
+        with open(os.path.join(id_path, "retain_train_ids.txt"), "r") as f:
+            for line in f:
+                line = line.strip()
+                if line == "":
+                    continue
+                retain_train_ids.append(line)
+        retain_val_ids = []
+        with open(os.path.join(id_path, "retain_val_ids.txt"), "r") as f:
+            for line in f:
+                line = line.strip()
+                if line == "":
+                    continue
+                retain_val_ids.append(line)
+
+        jsonl_url = "https://raw.githubusercontent.com/amazon-science/lume-llm-unlearning/refs/heads/main/data/forget.jsonl"
+        orig_set = pd.read_json(jsonl_url, lines=True)
+
+        retain_jsonl_url = "https://raw.githubusercontent.com/amazon-science/lume-llm-unlearning/refs/heads/main/data/retain.jsonl"
+        retain_set = pd.read_json(retain_jsonl_url, lines=True)
+
+        forget_train_df = orig_set[orig_set["id"].isin(forget_train_ids)]
+        forget_validation_df = orig_set[orig_set["id"].isin(forget_val_ids)]
+        retain_train_df = retain_set[retain_set["id"].isin(retain_train_ids)]
+        retain_validation_df = retain_set[retain_set["id"].isin(retain_val_ids)]
+
+        #save each
+        forget_train_df.to_parquet(
+            os.path.join(path, "data/forget_train-00000-of-00001.parquet"),
+            engine="pyarrow",
+        )
+        forget_validation_df.to_parquet(
+            os.path.join(path, "data/forget_validation-00000-of-00001.parquet"),
+            engine="pyarrow",
+        )
+        retain_train_df.to_parquet(
+            os.path.join(path, "data/retain_train-00000-of-00001.parquet"),
+            engine="pyarrow",
+        )
+        retain_validation_df.to_parquet(
+            os.path.join(path, "data/retain_validation-00000-of-00001.parquet"),
+            engine="pyarrow",
         )
 
     retain_train_df = pd.read_parquet(
@@ -71,19 +125,15 @@ def download_datasets(
 
 
 def main(args):
-    hf_token = args.hf_token
-    download_model(hf_token, os.path.join(args.path, "semeval25-unlearning-model"))
+    download_model(os.path.join(args.path, "semeval25-unlearning-model"))
     download_model_1B(
-        hf_token, os.path.join(args.path, "semeval25-unlearning-1B-model")
+        os.path.join(args.path, "semeval25-unlearning-1B-model")
     )
-    download_datasets(hf_token, os.path.join(args.path, "semeval25-unlearning-data"))
+    download_datasets(os.path.join(args.path, "semeval25-unlearning-data"))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--hf_token", required=True, type=str, help="Semeval task hugging face token."
-    )
     parser.add_argument(
         "--path", default=".", type=str, help="Path to save the downloaded files."
     )

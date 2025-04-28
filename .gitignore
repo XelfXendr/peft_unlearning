@@ -24,7 +24,11 @@ logs/
 output/
 
 *.tar.gz
+*.tar
+*.pdf
 
 hf_token.txt
 
 logdir.txt
+
+jupyter/unrelated/checkpoint*

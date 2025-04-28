@@ -19,10 +19,6 @@ from unlearn_loading import download_model, download_datasets, download_model_1B
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    "--hf_token", required=True, type=str, help="SemEval-2025 Task 4 hugging face token. (Required)"
-)
-
-parser.add_argument(
     "--model", default="1B", type=str, choices=["1B", "7B"], help="Model to use."
 )
 parser.add_argument("--logdir", default="logs", type=str, help="Logdir.")
@@ -57,7 +53,7 @@ parser.add_argument(
 )
 
 parser.add_argument("--lora_rank", default=5, type=int, help="Rank of the LoRAs.")
-parser.add_argument("--lora_alpha", dafault=None, type=float, help="The LoRA alpha parameter. None means alpha=rank.")
+parser.add_argument("--lora_alpha", default=None, type=float, help="The LoRA alpha parameter. None means alpha=rank.")
 parser.add_argument(
     "--lora_merge_every",
     default=-1,
@@ -112,14 +108,12 @@ def main(args: argparse.Namespace):
     with open("logdir.txt", "w") as f:
         f.write(f"{args.logdir}")
 
-    hf_token = args.hf_token
-
-    retain_train, retain_val, forget_train, forget_val = download_datasets(hf_token)
+    retain_train, retain_val, forget_train, forget_val = download_datasets()
 
     if args.model == "7B":
-        model, tokenizer = download_model(hf_token)
+        model, tokenizer = download_model()
     else:
-        model, tokenizer = download_model_1B(hf_token)
+        model, tokenizer = download_model_1B()
 
     unlearned_model = unlearn(model, tokenizer, retain_train, forget_train, args)
 

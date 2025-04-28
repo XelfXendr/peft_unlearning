@@ -25,7 +25,7 @@ uv sync
 The `requirements.txt` file is also present for pip setup.
 
 ## Running the project
-Warning: Evaluation scripts are not currently included in the repository, and the code will not work without them. We are currently rewriting them to release them under the MIT license.
+Warning: Evaluation scripts are not currently included in the repository. We are currently rewriting them to release them under the MIT license.
 
 All available arguments may be listed using:
 ```bash
@@ -34,7 +34,6 @@ uv run src/unlearn.py --help
 
 Important arguments:
 ```bash
-  --hf_token HF_TOKEN   SemEval-2025 Task 4 hugging face token. (Required)
   --model {1B,7B}       Model to use.
   --logdir LOGDIR       Logdir.
 
@@ -49,9 +48,11 @@ Important arguments:
   --kl_mult KL_MULT     KL divergence retain loss multiplier.
   --lora_rank LORA_RANK
                         Rank of the LoRAs.
+  --lora_alpha LORA_ALPHA
+                        The LoRA alpha parameter. None means alpha=rank.
   
   --evaluate_every EVALUATE_EVERY
-                        Evaluate every n epochs. `-1` means never.
+                        Currently doesn't do anything.
   --save_every SAVE_EVERY
                         Save checkpoint every n epochs. `-1` means never.
   --save_model, --no-save_model

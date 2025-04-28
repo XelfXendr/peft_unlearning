@@ -4,7 +4,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from models import LoRAModel
 import argparse
 from tqdm.auto import tqdm
-import metrics
+#import metrics
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import os
@@ -192,6 +192,7 @@ class UnlearningModel(torch.nn.Module):
             self.writer(writer).flush()
 
     def eval(self, step):
+        """
         device = self._device
         loraLLM = self._llm
         loraLLM.only_backbone(False)
@@ -238,6 +239,7 @@ class UnlearningModel(torch.nn.Module):
             },
             step,
         )
+        """
 
     def save_checkpoint(self, path: str):
         self._llm.to("cpu")

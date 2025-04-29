@@ -25,7 +25,7 @@ uv sync
 The `requirements.txt` file is also present for pip setup.
 
 ## Running the project
-Warning: Evaluation scripts are not currently included in the repository. We are currently rewriting them to release them under the MIT license.
+Disclaimer: At the moment, the evaluation scripts are not included in the repository. We are currently rewriting them to release them under the MIT license.
 
 All available arguments may be listed using:
 ```bash
@@ -52,7 +52,7 @@ Important arguments:
                         The LoRA alpha parameter. None means alpha=rank.
   
   --evaluate_every EVALUATE_EVERY
-                        Currently doesn't do anything.
+                        Currently has no effect.
   --save_every SAVE_EVERY
                         Save checkpoint every n epochs. `-1` means never.
   --save_model, --no-save_model
